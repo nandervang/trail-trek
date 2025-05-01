@@ -1,0 +1,64 @@
+@media print {
+  @page {
+    margin: 2cm;
+    size: portrait;
+  }
+
+  body {
+    background: white;
+    font-size: 12pt;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:break-before-page {
+    break-before: page;
+  }
+
+  .print\:break-after-page {
+    break-after: page;
+  }
+
+  .card {
+    border: 1px solid #000;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  .text-primary-600 {
+    color: #000 !important;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    break-after: avoid;
+  }
+
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  table {
+    break-inside: auto;
+  }
+
+  tr {
+    break-inside: avoid;
+    break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+}
