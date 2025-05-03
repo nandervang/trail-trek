@@ -2,21 +2,17 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { 
-  ArrowLeft, Edit, Package, ChevronDown, ChevronUp,
-  ListChecks, FileText, Image as ImageIcon, MapPin, 
-  Calendar, Route, Plus, Menu, X
-} from 'lucide-react';
+import { ArrowLeft, Edit, Menu, X, ListChecks, Package, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { format, parseISO } from 'date-fns';
-import HikeGear from './HikeGear';
-import HikeLogs from '@/components/HikeLogs';
-import ImageGallery from '@/components/ImageGallery';
+import HikeOverview from '@/components/hikes/HikeOverview';
+import TaskSection from '@/components/hikes/tasks/TaskSection';
+import GearSection from '@/components/hikes/gear/GearSection';
+import LogSection from '@/components/hikes/logs/LogSection';
+import GallerySection from '@/components/hikes/gallery/GallerySection';
 import { uploadImage } from '@/lib/storage';
 import { toast } from 'sonner';
-import WeightChart from '@/components/WeightChart';
-import { formatWeight } from '@/utils/weight';
 import LogModal from '@/components/LogModal';
+import { Log } from '@/components/hikes/logs/types';
 
 export default function HikeDetails() {
   const { id } = useParams<{ id: string }>();
@@ -29,7 +25,7 @@ export default function HikeDetails() {
     completion: false,
     gallery: false,
   });
-  const [selectedLog, setSelectedLog] = useState<any>(null);
+  const [selectedLog, setSelectedLog] = useState<Log | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const { data: hike, isLoading } = useQuery({
@@ -43,6 +39,45 @@ export default function HikeDetails() {
         .eq('id', id)
         .single();
         
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: tasks } = useQuery({
+    queryKey: ['hike-tasks', id],
+    queryFn: async () => {
+      if (!id) throw new Error("Invalid request");
+      const { data, error } = await supabase
+        .from('hike_tasks')
+        .select('*')
+        .eq('hike_id', id)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: gear } = useQuery({
+    queryKey: ['hike-gear', id],
+    queryFn: async () => {
+      if (!id) throw new Error("Invalid request");
+      const { data, error } = await supabase
+        .from('hike_gear')
+        .select(`
+          *,
+          gear:gear_items(
+            id,
+            name,
+            weight_kg,
+            is_worn,
+            image_url,
+            category:categories(id, name)
+          )
+        `)
+        .eq('hike_id', id);
       if (error) throw error;
       return data;
     },
@@ -78,12 +113,55 @@ export default function HikeDetails() {
     });
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Not set';
+  const { baseWeight, totalWeight } = gear?.reduce((acc, item) => {
+    const weight = (item.gear?.weight_kg || 0) * (item.quantity || 1);
+    if (item.gear?.is_worn) {
+      acc.wornWeight += weight;
+    } else {
+      acc.baseWeight += weight;
+    }
+    acc.totalWeight += weight;
+    return acc;
+  }, { baseWeight: 0, wornWeight: 0, totalWeight: 0 }) ?? { baseWeight: 0, wornWeight: 0, totalWeight: 0 };
+
+  const regularGear = gear?.filter(item => !(item.gear as any).is_worn) || [];
+  const wearableGear = gear?.filter(item => (item.gear as any).is_worn) || [];
+
+  const handleImageUpload = async (files: File[]) => {
     try {
-      return format(parseISO(dateString), 'MMM d, yyyy');
+      const uploadPromises = files.map(file => uploadImage(file, id));
+      const imageUrls = await Promise.all(uploadPromises);
+      
+      const { error } = await supabase
+        .from('hikes')
+        .update({
+          images: [...(hike.images || []), ...imageUrls]
+        })
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      toast.success('Images uploaded successfully');
     } catch (error) {
-      return 'Invalid date';
+      console.error('Error uploading images:', error);
+      toast.error('Failed to upload images');
+    }
+  };
+
+  const handleImagesChange = async (newImages: string[], newDescriptions?: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('hikes')
+        .update({
+          images: newImages,
+          image_descriptions: newDescriptions
+        })
+        .eq('id', id);
+        
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating images:', error);
+      toast.error('Failed to update images');
     }
   };
 
@@ -192,187 +270,57 @@ export default function HikeDetails() {
       </div>
 
       {/* Overview Section */}
-      <div className="card mb-8">
-        <div 
-          className="flex justify-between items-center p-6 cursor-pointer"
-          onClick={() => toggleSection('details')}
-        >
-          <h2 className="text-xl font-light flex items-center">
-            <Route className="h-5 w-5 mr-2 text-primary-900" />
-            Overview
-          </h2>
-          {expandedSections.details ? (
-            <ChevronUp className="h-5 w-5 text-gray-500" />
-          ) : (
-            <ChevronDown className="h-5 w-5 text-gray-500" />
-          )}
-        </div>
-        
-        {expandedSections.details && (
-          <div className="px-6 pb-6 border-t border-gray-100 pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-start">
-                <Calendar className="h-5 w-5 text-gray-500 mt-1 mr-3" />
-                <div>
-                  <h4 className="text-sm uppercase tracking-wider text-gray-600 mb-1">Dates</h4>
-                  <p className="text-xl">
-                    {hike.start_date && hike.end_date 
-                      ? `${formatDate(hike.start_date)} - ${formatDate(hike.end_date)}`
-                      : formatDate(hike.start_date)}
-                  </p>
-                </div>
-              </div>
-
-              {hike.distance_miles && (
-                <div className="flex items-start">
-                  <Route className="h-5 w-5 text-gray-500 mt-1 mr-3" />
-                  <div>
-                    <h4 className="text-sm uppercase tracking-wider text-gray-600 mb-1">Distance</h4>
-                    <p className="text-xl">{hike.distance_miles} miles</p>
-                  </div>
-                </div>
-              )}
-
-              {hike.start_location && (
-                <div className="flex items-start">
-                  <MapPin className="h-5 w-5 text-gray-500 mt-1 mr-3" />
-                  <div>
-                    <h4 className="text-sm uppercase tracking-wider text-gray-600 mb-1">Starting Point</h4>
-                    <p className="text-xl">{hike.start_location}</p>
-                  </div>
-                </div>
-              )}
-
-              {hike.end_location && (
-                <div className="flex items-start">
-                  <MapPin className="h-5 w-5 text-gray-500 mt-1 mr-3" />
-                  <div>
-                    <h4 className="text-sm uppercase tracking-wider text-gray-600 mb-1">Destination</h4>
-                    <p className="text-xl">{hike.end_location}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {hike.description && (
-              <div className="mt-6">
-                <h4 className="text-sm uppercase tracking-wider text-gray-600 mb-2">Description</h4>
-                <p className="text-lg whitespace-pre-line">{hike.description}</p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <HikeOverview 
+        hike={hike}
+        baseWeight={baseWeight}
+        totalWeight={totalWeight}
+        expanded={expandedSections.details}
+        onToggle={() => toggleSection('details')}
+      />
 
       {/* Tasks Section */}
-      <div className="card mb-8">
-        <div 
-          className="flex justify-between items-center p-6 cursor-pointer"
-          onClick={() => toggleSection('tasks')}
-        >
-          <h2 className="text-xl font-light flex items-center">
-            <ListChecks className="h-5 w-5 mr-2 text-primary-900" />
-            Preparation Tasks
-          </h2>
-          {expandedSections.tasks ? (
-            <ChevronUp className="h-5 w-5 text-gray-500" />
-          ) : (
-            <ChevronDown className="h-5 w-5 text-gray-500" />
-          )}
-        </div>
-        
-        {expandedSections.tasks && (
-          <div className="px-6 pb-6 border-t border-gray-100 pt-6">
-            {/* Tasks content */}
-          </div>
-        )}
-      </div>
+      <TaskSection
+        tasks={tasks || []}
+        hikeId={id}
+        expanded={expandedSections.tasks}
+        onToggle={() => toggleSection('tasks')}
+      />
 
       {/* Gear Section */}
-      <div className="card mb-8">
-        <div 
-          className="flex justify-between items-center p-6 cursor-pointer"
-          onClick={() => toggleSection('gear')}
-        >
-          <h2 className="text-xl font-light flex items-center">
-            <Package className="h-5 w-5 mr-2 text-primary-900" />
-            Gear List
-          </h2>
-          {expandedSections.gear ? (
-            <ChevronUp className="h-5 w-5 text-gray-500" />
-          ) : (
-            <ChevronDown className="h-5 w-5 text-gray-500" />
-          )}
-        </div>
-        
-        {expandedSections.gear && (
-          <div className="px-6 pb-6 border-t border-gray-100 pt-6">
-            <HikeGear hikeId={id} />
-          </div>
-        )}
-      </div>
+      <GearSection
+        gear={regularGear}
+        hikeId={id}
+        expanded={expandedSections.gear}
+        onToggle={() => toggleSection('gear')}
+        title="Gear List"
+      />
+
+      <GearSection
+        gear={wearableGear}
+        hikeId={id}
+        expanded={expandedSections.wearable}
+        onToggle={() => toggleSection('wearable')}
+        title="Wearable Items"
+        isWearable
+      />
 
       {/* Logs Section */}
-      <div className="card mb-8">
-        <div 
-          className="flex justify-between items-center p-6 cursor-pointer"
-          onClick={() => toggleSection('logs')}
-        >
-          <h2 className="text-xl font-light flex items-center">
-            <FileText className="h-5 w-5 mr-2 text-primary-900" />
-            Trail Logs
-          </h2>
-          {expandedSections.logs ? (
-            <ChevronUp className="h-5 w-5 text-gray-500" />
-          ) : (
-            <ChevronDown className="h-5 w-5 text-gray-500" />
-          )}
-        </div>
-        
-        {expandedSections.logs && (
-          <div className="px-6 pb-6 border-t border-gray-100 pt-6">
-            <div className="flex justify-end mb-6">
-              <Link to={`/hikes/${id}/log`} className="btn btn-primary">
-                Add Log Entry
-              </Link>
-            </div>
-            
-            <HikeLogs 
-              hikeId={id} 
-              onLogClick={(log) => setSelectedLog(log)}
-            />
-          </div>
-        )}
-      </div>
+      <LogSection
+        hikeId={id}
+        expanded={expandedSections.logs}
+        onToggle={() => toggleSection('logs')}
+        onLogClick={setSelectedLog}
+      />
 
       {/* Image Gallery Section */}
-      <div className="card mb-8">
-        <div 
-          className="flex justify-between items-center p-6 cursor-pointer"
-          onClick={() => toggleSection('gallery')}
-        >
-          <h2 className="text-xl font-light flex items-center">
-            <ImageIcon className="h-5 w-5 mr-2 text-primary-900" />
-            Image Gallery
-          </h2>
-          {expandedSections.gallery ? (
-            <ChevronUp className="h-5 w-5 text-gray-500" />
-          ) : (
-            <ChevronDown className="h-5 w-5 text-gray-500" />
-          )}
-        </div>
-        
-        {expandedSections.gallery && (
-          <div className="px-6 pb-6 border-t border-gray-100 pt-6">
-            <ImageGallery
-              images={hike.images || []}
-              descriptions={hike.image_descriptions || []}
-              onImagesChange={() => {}}
-              onUpload={() => {}}
-            />
-          </div>
-        )}
-      </div>
+      <GallerySection
+        images={hike.images || []}
+        descriptions={hike.image_descriptions || []}
+        expanded={expandedSections.gallery}
+        onToggle={() => toggleSection('gallery')}
+        onImagesChange={handleImagesChange}
+        onUpload={handleImageUpload}
+      />
 
       {/* Mobile Quick Actions */}
       <MobileQuickActions />

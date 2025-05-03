@@ -7,8 +7,8 @@ import HikeOverview from '@/components/hikes/HikeOverview';
 import TaskSection from '@/components/hikes/tasks/TaskSection';
 import GearSection from '@/components/hikes/gear/GearSection';
 
-export default function HikePlanner() {
-  const { id } = useParams<{ id: string }>();
+export default function SharedPlanner() {
+  const { shareId } = useParams<{ shareId: string }>();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     overview: true,
     tasks: true,
@@ -22,40 +22,43 @@ export default function HikePlanner() {
     }));
   };
 
-  const { data: hike } = useQuery({
-    queryKey: ['hike', id],
+  const { data: hike, isLoading: isLoadingHike } = useQuery({
+    queryKey: ['shared-hike', shareId],
     queryFn: async () => {
-      if (!id) throw new Error("Invalid request");
+      if (!shareId) throw new Error("Invalid request");
+      
       const { data, error } = await supabase
         .from('hikes')
         .select('*')
-        .eq('id', id)
+        .eq('share_id', shareId)
+        .eq('share_enabled', true)
         .single();
+        
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
+    enabled: !!shareId,
   });
 
   const { data: tasks } = useQuery({
-    queryKey: ['hike-tasks', id],
+    queryKey: ['shared-hike-tasks', shareId],
     queryFn: async () => {
-      if (!id) throw new Error("Invalid request");
+      if (!shareId) throw new Error("Invalid request");
       const { data, error } = await supabase
         .from('hike_tasks')
         .select('*')
-        .eq('hike_id', id)
+        .eq('hike_id', hike?.id)
         .order('created_at', { ascending: true });
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
+    enabled: !!hike?.id,
   });
 
   const { data: gear } = useQuery({
-    queryKey: ['hike-gear', id],
+    queryKey: ['shared-hike-gear', shareId],
     queryFn: async () => {
-      if (!id) throw new Error("Invalid request");
+      if (!shareId) throw new Error("Invalid request");
       const { data, error } = await supabase
         .from('hike_gear')
         .select(`
@@ -65,18 +68,37 @@ export default function HikePlanner() {
             name,
             weight_kg,
             image_url,
-            location,
             category:categories(id, name)
           )
         `)
-        .eq('hike_id', id);
+        .eq('hike_id', hike?.id);
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
+    enabled: !!hike?.id,
   });
 
-  if (!hike || !id) return null;
+  if (isLoadingHike) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (!hike) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center px-4">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Hike Not Found</h1>
+        <p className="text-gray-600 mb-8">
+          This hike may have expired or been removed.
+        </p>
+        <Link to="/" className="btn btn-primary">
+          Go Home
+        </Link>
+      </div>
+    );
+  }
 
   const { baseWeight, totalWeight, wearableWeight, bigThreeWeight } = gear?.reduce((acc, item) => {
     const weight = (item.gear?.weight_kg || 0) * (item.quantity || 1);
@@ -87,11 +109,10 @@ export default function HikePlanner() {
     } else {
       acc.baseWeight += weight;
       
-      // Calculate big three weight (Shelter, Backpack, Sleep System)
       if (
         category === 'Shelter' || 
         category === 'Backpack' || 
-        category === 'Sleep system'
+        category === 'Sleep System'
       ) {
         acc.bigThreeWeight += weight;
       }
@@ -105,20 +126,14 @@ export default function HikePlanner() {
   const wearableGear = gear?.filter(item => item.is_worn) || [];
 
   return (
-    <div className="container mx-auto px-4 py-8 pb-20 lg:pb-8 max-w-4xl print:py-0 print:px-0">
-      <div className="mb-8 flex items-center justify-between print:hidden">
+    <div className="container mx-auto px-4 py-8 pb-20 lg:pb-8 max-w-4xl">
+      <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center">
-          <Link to={`/hikes/${id}`} className="text-gray-500 hover:text-gray-700 mr-4">
+          <Link to={`/shared/${shareId}`} className="text-gray-500 hover:text-gray-700 mr-4">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="text-3xl font-light">Hike Planner</h1>
+          <h1 className="text-3xl font-light">{hike.name} - Planner</h1>
         </div>
-        <button 
-          onClick={() => window.print()}
-          className="btn btn-primary"
-        >
-          Print Checklist
-        </button>
       </div>
 
       <div className="space-y-8">
@@ -134,30 +149,30 @@ export default function HikePlanner() {
 
         <TaskSection
           tasks={tasks || []}
-          hikeId={id}
+          hikeId={hike.id}
           expanded={expandedSections.tasks}
           onToggle={() => toggleSection('tasks')}
-          viewOnly={false}
+          viewOnly
         />
 
         <GearSection
           gear={regularGear}
-          hikeId={id}
+          hikeId={hike.id}
           expanded={expandedSections.gear}
           onToggle={() => toggleSection('gear')}
-          title="Gear Checklist"
-          viewOnly={false}
+          title="Gear List"
+          viewOnly
         />
 
         {wearableGear.length > 0 && (
           <GearSection
             gear={wearableGear}
-            hikeId={id}
+            hikeId={hike.id}
             expanded={expandedSections.gear}
             onToggle={() => toggleSection('gear')}
             title="Wearable Items"
             isWearable
-            viewOnly={false}
+            viewOnly
           />
         )}
       </div>

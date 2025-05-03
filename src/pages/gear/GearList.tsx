@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { Plus, Search, Package2 } from 'lucide-react';
+import { Plus, Search, Package2, Utensils } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatWeight } from '@/utils/weight';
 import Zoom from 'react-medium-image-zoom';
@@ -25,6 +25,16 @@ type GearItem = {
   notes: string | null;
 };
 
+type FoodItem = {
+  id: string;
+  name: string;
+  weight_kg: number;
+  calories: number;
+  meal_category: string;
+  quantity: number;
+  description: string | null;
+};
+
 type GroupedGear = {
   [key: string]: {
     items: GearItem[];
@@ -38,7 +48,7 @@ export default function GearList() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   
-  const { data: gearWithCategories, isLoading } = useQuery({
+  const { data: gearWithCategories, isLoading: isLoadingGear } = useQuery({
     queryKey: ['gear', searchQuery],
     queryFn: async () => {
       if (!user) throw new Error("User not authenticated");
@@ -59,6 +69,28 @@ export default function GearList() {
       
       if (error) throw error;
       return data as GearItem[];
+    },
+    enabled: !!user,
+  });
+
+  const { data: foodItems, isLoading: isLoadingFood } = useQuery({
+    queryKey: ['food', searchQuery],
+    queryFn: async () => {
+      if (!user) throw new Error("User not authenticated");
+      
+      let query = supabase
+        .from('hike_food')
+        .select('*')
+        .eq('user_id', user.id);
+        
+      if (searchQuery) {
+        query = query.ilike('name', `%${searchQuery}%`);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      return data as FoodItem[];
     },
     enabled: !!user,
   });
@@ -102,6 +134,17 @@ export default function GearList() {
     wornWeight: 0,
     wornItems: 0
   });
+
+  const foodStats = foodItems?.reduce((acc, item) => {
+    acc.totalWeight += item.weight_kg * item.quantity;
+    acc.totalItems += item.quantity;
+    acc.totalCalories += (item.calories || 0) * item.quantity;
+    return acc;
+  }, {
+    totalWeight: 0,
+    totalItems: 0,
+    totalCalories: 0
+  });
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -139,14 +182,14 @@ export default function GearList() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        {isLoading ? (
+        {(isLoadingGear || isLoadingFood) ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-900"></div>
           </div>
-        ) : gearWithCategories && gearWithCategories.length > 0 ? (
+        ) : (gearWithCategories && gearWithCategories.length > 0) || (foodItems && foodItems.length > 0) ? (
           <div className="space-y-12">
             {/* Overall Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               <div className="card p-6">
                 <h3 className="text-lg font-light mb-2">Base Weight</h3>
                 <p className="text-2xl font-light">{formatWeight(totalStats?.baseWeight || 0)}</p>
@@ -161,6 +204,11 @@ export default function GearList() {
                 <h3 className="text-lg font-light mb-2">Total Weight</h3>
                 <p className="text-2xl font-light">{formatWeight(totalStats?.totalWeight || 0)}</p>
                 <p className="text-sm text-gray-500 mt-2">{totalStats?.totalItems || 0} total items</p>
+              </div>
+              <div className="card p-6">
+                <h3 className="text-lg font-light mb-2">Food Weight</h3>
+                <p className="text-2xl font-light">{formatWeight(foodStats?.totalWeight || 0)}</p>
+                <p className="text-sm text-gray-500 mt-2">{foodStats?.totalItems || 0} food items</p>
               </div>
               <div className="card p-6">
                 <h3 className="text-lg font-light mb-2">Categories</h3>
@@ -274,6 +322,77 @@ export default function GearList() {
                 </div>
               </div>
             ))}
+
+            {/* Food Items */}
+            {foodItems && foodItems.length > 0 && (
+              <div className="card overflow-hidden">
+                <div className="px-6 py-4 bg-gray-50 border-b border-gray-100">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-light flex items-center">
+                      <Utensils className="h-6 w-6 mr-2 text-primary-600" />
+                      Food
+                    </h2>
+                    <div className="text-sm text-gray-500">
+                      {foodStats?.totalItems} items • {formatWeight(foodStats?.totalWeight)} • {foodStats?.totalCalories} calories
+                    </div>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="text-left text-sm font-light uppercase tracking-wider text-gray-600 p-4">Item</th>
+                        <th className="text-left text-sm font-light uppercase tracking-wider text-gray-600 p-4">Category</th>
+                        <th className="text-left text-sm font-light uppercase tracking-wider text-gray-600 p-4">Weight</th>
+                        <th className="text-left text-sm font-light uppercase tracking-wider text-gray-600 p-4">Calories</th>
+                        <th className="text-left text-sm font-light uppercase tracking-wider text-gray-600 p-4">Quantity</th>
+                        <th className="text-left text-sm font-light uppercase tracking-wider text-gray-600 p-4">Total Weight</th>
+                        <th className="w-8 p-4"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {foodItems.map((item) => (
+                        <tr key={item.id} className="group hover:bg-gray-50">
+                          <td className="p-4">
+                            <div>
+                              <span className="text-gray-900">{item.name}</span>
+                              {item.description && (
+                                <p className="text-sm text-gray-500 mt-1">{item.description}</p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4 text-gray-600">{item.meal_category}</td>
+                          <td className="p-4 text-gray-600">{formatWeight(item.weight_kg)}</td>
+                          <td className="p-4 text-gray-600">{item.calories || '-'}</td>
+                          <td className="p-4 text-gray-600">{item.quantity}</td>
+                          <td className="p-4 text-gray-600">{formatWeight(item.weight_kg * item.quantity)}</td>
+                          <td className="p-4">
+                            <Link 
+                              to={`/food/${item.id}`}
+                              className="text-sm text-primary-900 hover:text-primary-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              Edit
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-gray-50 border-t border-gray-100">
+                      <tr>
+                        <td colSpan={5} className="p-4 text-sm font-medium text-gray-700">
+                          Food Total
+                        </td>
+                        <td className="p-4 text-sm font-medium text-gray-700">
+                          {formatWeight(foodStats?.totalWeight || 0)}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-12">

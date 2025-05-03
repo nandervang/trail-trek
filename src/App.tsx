@@ -11,6 +11,7 @@ import HikeForm from './pages/hikes/HikeForm';
 import HikeDetails from './pages/hikes/HikeDetails';
 import HikePlanner from './pages/hikes/HikePlanner';
 import SharedHike from './pages/shared/SharedHike';
+import SharedPlanner from './pages/shared/SharedPlanner';
 import NotFound from './pages/NotFound';
 import LogForm from './pages/logs/LogForm';
 
@@ -30,8 +31,9 @@ function App() {
       <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
       <Route path="/register" element={user ? <Navigate to="/" /> : <Register />} />
       
-      {/* Public shared hike route */}
+      {/* Public shared hike routes */}
       <Route path="/shared/:shareId" element={<SharedHike />} />
+      <Route path="/shared/:shareId/planner" element={<SharedPlanner />} />
       
       {/* Protected routes */}
       <Route element={<Layout />}>

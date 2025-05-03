@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { MapPin, Calendar, Route, Lock } from 'lucide-react';
+import { MapPin, Calendar, Route, Lock, ClipboardList } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { motion } from 'framer-motion';
 import type { Database } from '@/types/supabase';
@@ -113,11 +113,21 @@ export default function SharedHike() {
           className="max-w-4xl mx-auto"
         >
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            <h1 className="text-3xl font-bold mb-6">{hike.name}</h1>
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-3xl font-bold">{hike.name}</h1>
+              <Link 
+                to={`/shared/${shareId}/planner`}
+                className="btn btn-primary flex items-center"
+              >
+                <ClipboardList className="h-4 w-4 mr-2" />
+                View Planner
+              </Link>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <div className="flex items-start">
-                <Calendar className="h-5 w-5 text-gray-500 mt-1 mr-3" />
+                <Calendar className="h-5 w-5 text-gray-500 mt-1 mr-3"
+                />
                 <div>
                   <h4 className="text-sm uppercase tracking-wider text-gray-600 mb-1">
                     Dates

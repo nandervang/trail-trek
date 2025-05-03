@@ -19,6 +19,8 @@ type GearItemFormData = {
   quantity: number;
   is_worn: boolean;
   image_url: string;
+  location: string;
+  notes: string;
 };
 
 export default function GearForm() {
@@ -43,6 +45,8 @@ export default function GearForm() {
       quantity: 1,
       is_worn: false,
       image_url: '',
+      location: '',
+      notes: '',
     }
   });
   
@@ -74,6 +78,8 @@ export default function GearForm() {
         quantity: gearItem.quantity || 1,
         is_worn: gearItem.is_worn || false,
         image_url: gearItem.image_url || '',
+        location: gearItem.location || '',
+        notes: gearItem.notes || '',
       });
       if (gearItem.image_url) {
         setImagePreview(gearItem.image_url);
@@ -371,12 +377,24 @@ export default function GearForm() {
                 {...register('quantity', { 
                   min: { value: 1, message: 'Quantity must be at least 1' },
                   valueAsNumber: true
-                
                 })}
               />
               {errors.quantity && (
                 <p className="mt-1 text-sm text-error-500">{errors.quantity.message}</p>
               )}
+            </div>
+
+            <div>
+              <label htmlFor="location" className="label">
+                Storage Location
+              </label>
+              <input
+                id="location"
+                type="text"
+                className="input"
+                {...register('location')}
+                placeholder="Where is this item stored?"
+              />
             </div>
 
             <div>
@@ -391,6 +409,19 @@ export default function GearForm() {
               <p className="mt-1 text-sm text-gray-500">
                 Wearable items are counted separately in pack weight calculations
               </p>
+            </div>
+
+            <div className="md:col-span-2">
+              <label htmlFor="notes" className="label">
+                Notes
+              </label>
+              <textarea
+                id="notes"
+                className="input"
+                rows={3}
+                {...register('notes')}
+                placeholder="Additional notes about this item..."
+              ></textarea>
             </div>
 
             <div className="md:col-span-2">
