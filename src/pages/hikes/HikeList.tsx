@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { Plus, Calendar, MapPin, Route, ChevronRight, Share2 } from 'lucide-react';
+import { Plus, Calendar, MapPin, Route, ChevronRight, Share2, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
 import ShareHikeModal from '@/components/ShareHikeModal';
+import DeleteHikeModal from '@/components/hikes/DeleteHikeModal';
+import { toast } from 'sonner';
 
 type Hike = {
   id: string;
@@ -17,15 +19,17 @@ type Hike = {
   type: string | null;
   start_location: string | null;
   end_location: string | null;
-  distance_miles: number | null;
+  distance_km: number | null;
   status: string;
 };
 
 export default function HikeList() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedHike, setSelectedHike] = useState<Hike | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   
   const { data: hikes, isLoading } = useQuery({
     queryKey: ['hikes', statusFilter],
@@ -50,6 +54,26 @@ export default function HikeList() {
       return data as Hike[];
     },
     enabled: !!user,
+  });
+
+  const deleteHike = useMutation({
+    mutationFn: async (hikeId: string) => {
+      const { error } = await supabase
+        .from('hikes')
+        .delete()
+        .eq('id', hikeId);
+        
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hikes'] });
+      toast.success('Hike deleted successfully');
+      setShowDeleteModal(false);
+      setSelectedHike(null);
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete hike: ${error.message}`);
+    },
   });
   
   const getStatusBadgeClass = (status: string) => {
@@ -181,8 +205,19 @@ export default function HikeList() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="card overflow-hidden hover:shadow-card-hover"
+              className="card overflow-hidden hover:shadow-card-hover relative group"
             >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedHike(hike);
+                  setShowDeleteModal(true);
+                }}
+                className="absolute top-4 right-4 p-2 rounded-full bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-50"
+              >
+                <X className="h-4 w-4 text-gray-500" />
+              </button>
+
               <div className="p-5">
                 <div className="flex justify-between items-start mb-3">
                   <h2 className="text-xl font-semibold line-clamp-1">{hike.name}</h2>
@@ -214,10 +249,10 @@ export default function HikeList() {
                     </div>
                   )}
                   
-                  {hike.distance_miles && (
+                  {hike.distance_km && (
                     <div className="flex items-center">
                       <Route className="h-4 w-4 mr-2" />
-                      <span>{hike.distance_miles} miles</span>
+                      <span>{hike.distance_km} km</span>
                     </div>
                   )}
                 </div>
@@ -267,14 +302,26 @@ export default function HikeList() {
       )}
 
       {selectedHike && (
-        <ShareHikeModal
-          isOpen={showShareModal}
-          onClose={() => {
-            setShowShareModal(false);
-            setSelectedHike(null);
-          }}
-          hike={selectedHike}
-        />
+        <>
+          <ShareHikeModal
+            isOpen={showShareModal}
+            onClose={() => {
+              setShowShareModal(false);
+              setSelectedHike(null);
+            }}
+            hike={selectedHike}
+          />
+
+          <DeleteHikeModal
+            isOpen={showDeleteModal}
+            onClose={() => {
+              setShowDeleteModal(false);
+              setSelectedHike(null);
+            }}
+            onConfirm={() => deleteHike.mutate(selectedHike.id)}
+            hikeName={selectedHike.name}
+          />
+        </>
       )}
     </div>
   );

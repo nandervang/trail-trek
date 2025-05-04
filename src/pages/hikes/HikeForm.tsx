@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link, useParams } from 'react-router-dom';
@@ -7,19 +8,10 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Save } from 'lucide-react';
-
-interface HikeFormData {
-  name: string;
-  description: string;
-  start_date: string;
-  end_date: string;
-  start_location: string;
-  end_location: string;
-  distance_miles: number;
-  type: string;
-  difficulty_level: string;
-  elevation_gain: number;
-}
+import BasicInfo from '@/components/hikes/form/BasicInfo';
+import LocationPicker from '@/components/hikes/form/LocationPicker';
+import RouteDetails from '@/components/hikes/form/RouteDetails';
+import type { HikeFormData } from '@/components/hikes/form/types';
 
 export default function HikeForm() {
   const { id } = useParams<{ id: string }>();
@@ -28,26 +20,15 @@ export default function HikeForm() {
   const queryClient = useQueryClient();
   const isEditMode = !!id;
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<HikeFormData>({
-    defaultValues: {
-      name: '',
-      description: '',
-      start_date: '',
-      end_date: '',
-      start_location: '',
-      end_location: '',
-      distance_miles: 0,
-      type: 'day_hike',
-      difficulty_level: 'moderate',
-      elevation_gain: 0,
-    }
-  });
+  const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = useForm<HikeFormData>();
 
+  // Fetch hike data if in edit mode
   const { data: hike, isLoading } = useQuery({
     queryKey: ['hike', id],
     queryFn: async () => {
       if (!user || !id) return null;
       
+      console.log('Fetching hike data for id:', id);
       const { data, error } = await supabase
         .from('hikes')
         .select('*')
@@ -55,11 +36,36 @@ export default function HikeForm() {
         .eq('user_id', user.id)
         .single();
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching hike:', error);
+        throw error;
+      }
+      console.log('Fetched hike data:', data);
       return data;
     },
     enabled: !!user && !!id,
   });
+
+  // Effect to populate form when data is loaded
+  React.useEffect(() => {
+    if (hike) {
+      console.log('Resetting form with hike data:', hike);
+      reset({
+        name: hike.name,
+        description: hike.description || '',
+        start_date: hike.start_date || '',
+        end_date: hike.end_date || '',
+        start_location: hike.start_location || '',
+        end_location: hike.end_location || '',
+        start_coordinates: hike.start_coordinates as [number, number] || null,
+        end_coordinates: hike.end_coordinates as [number, number] || null,
+        distance_km: hike.distance_km || 0,
+        type: hike.type || 'day_hike',
+        difficulty_level: hike.difficulty_level || 'moderate',
+        elevation_gain: hike.elevation_gain || 0,
+      });
+    }
+  }, [hike, reset]);
 
   const createHike = useMutation({
     mutationFn: async (data: HikeFormData) => {
@@ -115,6 +121,7 @@ export default function HikeForm() {
   });
 
   const onSubmit = (data: HikeFormData) => {
+    console.log('Form submitted with data:', data);
     if (isEditMode) {
       updateHike.mutate(data);
     } else {
@@ -147,122 +154,47 @@ export default function HikeForm() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+        className="bg-white rounded-lg shadow-sm border border-gray-200"
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div>
-            <label className="label">Hike Name *</label>
-            <input
-              type="text"
-              className={`input ${errors.name ? 'border-error-500' : ''}`}
-              {...register('name', { required: 'Name is required' })}
-              placeholder="Give your hike a name"
-            />
-            {errors.name && (
-              <p className="mt-1 text-sm text-error-500">{errors.name.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="label">Description</label>
-            <textarea
-              className="input"
-              rows={3}
-              {...register('description')}
-              placeholder="Describe your hike"
-            ></textarea>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="p-6 space-y-8">
             <div>
-              <label className="label">Start Date</label>
-              <input
-                type="date"
-                className="input"
-                {...register('start_date')}
-              />
+              <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
+              <BasicInfo register={register} errors={errors} />
             </div>
 
             <div>
-              <label className="label">End Date</label>
-              <input
-                type="date"
-                className="input"
-                {...register('end_date')}
-              />
+              <h2 className="text-xl font-semibold mb-4">Location</h2>
+              <div className="space-y-6">
+                <LocationPicker
+                  label="Starting Point"
+                  value={watch('start_location')}
+                  coordinates={watch('start_coordinates')}
+                  onChange={(location, coordinates) => {
+                    setValue('start_location', location);
+                    setValue('start_coordinates', coordinates);
+                  }}
+                />
+
+                <LocationPicker
+                  label="Destination"
+                  value={watch('end_location')}
+                  coordinates={watch('end_coordinates')}
+                  onChange={(location, coordinates) => {
+                    setValue('end_location', location);
+                    setValue('end_coordinates', coordinates);
+                  }}
+                />
+              </div>
             </div>
 
             <div>
-              <label className="label">Starting Point</label>
-              <input
-                type="text"
-                className="input"
-                {...register('start_location')}
-                placeholder="Where does the hike start?"
-              />
-            </div>
-
-            <div>
-              <label className="label">Destination</label>
-              <input
-                type="text"
-                className="input"
-                {...register('end_location')}
-                placeholder="Where does the hike end?"
-              />
-            </div>
-
-            <div>
-              <label className="label">Distance (miles)</label>
-              <input
-                type="number"
-                step="0.1"
-                className="input"
-                {...register('distance_miles', { 
-                  valueAsNumber: true,
-                  min: { value: 0, message: 'Distance must be positive' }
-                })}
-              />
-              {errors.distance_miles && (
-                <p className="mt-1 text-sm text-error-500">{errors.distance_miles.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="label">Elevation Gain (meters)</label>
-              <input
-                type="number"
-                className="input"
-                {...register('elevation_gain', { 
-                  valueAsNumber: true,
-                  min: { value: 0, message: 'Elevation gain must be positive' }
-                })}
-              />
-            </div>
-
-            <div>
-              <label className="label">Type</label>
-              <select className="input" {...register('type')}>
-                <option value="day_hike">Day Hike</option>
-                <option value="overnight">Overnight</option>
-                <option value="multi_day">Multi-day Trek</option>
-                <option value="thru_hike">Thru-hike</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="label">Difficulty Level</label>
-              <select className="input" {...register('difficulty_level')}>
-                <option value="easy">Easy</option>
-                <option value="moderate">Moderate</option>
-                <option value="challenging">Challenging</option>
-                <option value="difficult">Difficult</option>
-                <option value="extreme">Extreme</option>
-              </select>
+              <h2 className="text-xl font-semibold mb-4">Route Details</h2>
+              <RouteDetails register={register} errors={errors} />
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-6">
+          <div className="border-t border-gray-200 px-6 py-4 flex justify-end space-x-3">
             <Link to="/hikes" className="btn btn-outline">
               Cancel
             </Link>

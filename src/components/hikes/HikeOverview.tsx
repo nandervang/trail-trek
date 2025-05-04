@@ -28,6 +28,11 @@ export default function HikeOverview({
     return format(parseISO(date), 'MMM d, yyyy');
   };
 
+  const formatCoordinates = (coords: [number, number] | null) => {
+    if (!coords) return null;
+    return `${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`;
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 mb-6">
       <div 
@@ -61,42 +66,46 @@ export default function HikeOverview({
                 </div>
               </div>
 
-              {hike.distance_miles && (
+              {hike.distance_km && (
                 <div className="flex items-start">
                   <Route className="h-6 w-6 text-primary-600 mt-1 mr-3" />
                   <div>
                     <h4 className="text-sm uppercase tracking-wider text-gray-600 mb-1">Distance</h4>
-                    <p className="text-lg">{hike.distance_miles} miles</p>
+                    <p className="text-lg">{hike.distance_km} km</p>
                   </div>
                 </div>
               )}
 
-              {hike.elevation_gain && (
-                <div className="flex items-start">
-                  <Mountain className="h-6 w-6 text-primary-600 mt-1 mr-3" />
-                  <div>
-                    <h4 className="text-sm uppercase tracking-wider text-gray-600 mb-1">Elevation Gain</h4>
-                    <p className="text-lg">{hike.elevation_gain}m</p>
-                  </div>
+              <div className="flex items-start">
+                <Mountain className="h-6 w-6 text-primary-600 mt-1 mr-3" />
+                <div>
+                  <h4 className="text-sm uppercase tracking-wider text-gray-600 mb-1">Elevation Gain</h4>
+                  <p className="text-lg">{hike.elevation_gain || 0}m</p>
                 </div>
-              )}
+              </div>
 
-              {hike.start_location && (
+              {(hike.start_location || hike.start_coordinates) && (
                 <div className="flex items-start">
                   <MapPin className="h-6 w-6 text-primary-600 mt-1 mr-3" />
                   <div>
                     <h4 className="text-sm uppercase tracking-wider text-gray-600 mb-1">Starting Point</h4>
                     <p className="text-lg">{hike.start_location}</p>
+                    {hike.start_coordinates && (
+                      <p className="text-sm text-gray-500">{formatCoordinates(hike.start_coordinates)}</p>
+                    )}
                   </div>
                 </div>
               )}
 
-              {hike.end_location && (
+              {(hike.end_location || hike.end_coordinates) && (
                 <div className="flex items-start">
                   <MapPin className="h-6 w-6 text-primary-600 mt-1 mr-3" />
                   <div>
                     <h4 className="text-sm uppercase tracking-wider text-gray-600 mb-1">Destination</h4>
                     <p className="text-lg">{hike.end_location}</p>
+                    {hike.end_coordinates && (
+                      <p className="text-sm text-gray-500">{formatCoordinates(hike.end_coordinates)}</p>
+                    )}
                   </div>
                 </div>
               )}
