@@ -186,7 +186,7 @@ export default function Dashboard() {
                         {hike.end_date ? ` - ${new Date(hike.end_date).toLocaleDateString()}` : ''}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {hike.distance_miles ? `${hike.distance_miles} miles` : 'Distance not set'}
+                        {hike.distance_km ? `${hike.distance_km} kilometers` : 'Distance not set'}
                       </div>
                     </div>
                   </Link>

@@ -1,5 +1,5 @@
 import { format, parseISO } from 'date-fns';
-import { Calendar, MapPin, Route, Mountain, Package, ChevronUp, ChevronDown, Scale, Utensils, Shirt, Tent } from 'lucide-react';
+import { Calendar, MapPin, Route, Mountain, Package, ChevronUp, ChevronDown, Utensils, Shirt, Tent } from 'lucide-react';
 import { formatWeight } from '@/utils/weight';
 
 interface HikeOverviewProps {

@@ -42,6 +42,7 @@ const difficultyLabels = ['Easy', 'Moderate', 'Challenging', 'Difficult', 'Extre
 export default function HikeLogs({ hikeId, onLogClick }: HikeLogsProps) {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  console.log(editingLogId);
 
   const { data: logs, isLoading } = useQuery({
     queryKey: ['hike-logs', hikeId],

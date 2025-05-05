@@ -43,11 +43,11 @@ export default function SharedPlanner() {
   const { data: tasks } = useQuery({
     queryKey: ['shared-hike-tasks', shareId],
     queryFn: async () => {
-      if (!shareId) throw new Error("Invalid request");
+      if (!shareId || !hike?.id) throw new Error("Invalid request");
       const { data, error } = await supabase
         .from('hike_tasks')
         .select('*')
-        .eq('hike_id', hike?.id)
+        .eq('hike_id', hike.id)
         .order('created_at', { ascending: true });
       if (error) throw error;
       return data;
@@ -58,7 +58,7 @@ export default function SharedPlanner() {
   const { data: gear } = useQuery({
     queryKey: ['shared-hike-gear', shareId],
     queryFn: async () => {
-      if (!shareId) throw new Error("Invalid request");
+      if (!shareId || !hike?.id) throw new Error("Invalid request");
       const { data, error } = await supabase
         .from('hike_gear')
         .select(`
@@ -71,7 +71,7 @@ export default function SharedPlanner() {
             category:categories(id, name)
           )
         `)
-        .eq('hike_id', hike?.id);
+        .eq('hike_id', hike.id);
       if (error) throw error;
       return data;
     },

@@ -1,5 +1,4 @@
 import React from 'react';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
@@ -169,7 +168,7 @@ export default function HikeForm() {
                 <LocationPicker
                   label="Starting Point"
                   value={watch('start_location')}
-                  coordinates={watch('start_coordinates')}
+                  coordinates={watch('start_coordinates') || undefined}
                   onChange={(location, coordinates) => {
                     setValue('start_location', location);
                     setValue('start_coordinates', coordinates);
@@ -179,7 +178,7 @@ export default function HikeForm() {
                 <LocationPicker
                   label="Destination"
                   value={watch('end_location')}
-                  coordinates={watch('end_coordinates')}
+                  coordinates={watch('end_coordinates') || undefined}
                   onChange={(location, coordinates) => {
                     setValue('end_location', location);
                     setValue('end_coordinates', coordinates);

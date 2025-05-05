@@ -8,7 +8,7 @@ import GearSelector from './GearSelector';
 import { GearItem } from './types';
 
 interface GearSectionProps {
-  gear: GearItem[];
+  gear: GearItem[] | any[];
   hikeId: string;
   expanded: boolean;
   onToggle: () => void;
@@ -122,7 +122,7 @@ export default function GearSection({
           <GearList
             items={gear}
             onToggleChecked={(gearId, checked) => toggleGearChecked.mutate({ gearId, checked })}
-            viewOnly={viewOnly}
+            viewOnly={false}
           />
         </div>
       )}

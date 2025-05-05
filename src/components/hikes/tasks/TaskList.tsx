@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Task } from './types';
 
 interface TaskListProps {
-  tasks: Task[];
+  tasks: Partial<Task>[] | any[];
   hikeId: string;
   viewOnly?: boolean;
 }

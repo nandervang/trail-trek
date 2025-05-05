@@ -145,14 +145,14 @@ export default function SharedHike() {
                 </div>
               </div>
 
-              {hike.distance_miles && (
+              {hike.distance_km && (
                 <div className="flex items-start">
                   <Route className="h-5 w-5 text-gray-500 mt-1 mr-3" />
                   <div>
                     <h4 className="text-sm uppercase tracking-wider text-gray-600 mb-1">
                       Distance
                     </h4>
-                    <p className="text-xl">{hike.distance_miles} miles</p>
+                    <p className="text-xl">{hike.distance_km} miles</p>
                   </div>
                 </div>
               )}

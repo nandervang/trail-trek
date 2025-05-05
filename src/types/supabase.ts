@@ -310,7 +310,7 @@ export interface Database {
           end_location: string | null
           start_coordinates: Json | null
           end_coordinates: Json | null
-          distance_miles: number | null
+          distance_km: number | null
           status: string | null
           user_id: string
           rating_score: number | null
@@ -342,7 +342,7 @@ export interface Database {
           end_location?: string | null
           start_coordinates?: Json | null
           end_coordinates?: Json | null
-          distance_miles?: number | null
+          distance_km?: number | null
           status?: string | null
           user_id: string
           rating_score?: number | null
@@ -374,7 +374,7 @@ export interface Database {
           end_location?: string | null
           start_coordinates?: Json | null
           end_coordinates?: Json | null
-          distance_miles?: number | null
+          distance_km?: number | null
           status?: string | null
           user_id?: string
           rating_score?: number | null

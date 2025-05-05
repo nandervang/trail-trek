@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { ArrowLeft, Edit, Menu, X, ListChecks, Package, Plus } from 'lucide-react';
-import { motion } from 'framer-motion';
 import HikeOverview from '@/components/hikes/HikeOverview';
 import TaskSection from '@/components/hikes/tasks/TaskSection';
 import GearSection from '@/components/hikes/gear/GearSection';
@@ -72,6 +71,7 @@ export default function HikeDetails() {
             id,
             name,
             weight_kg,
+            location,
             is_worn,
             image_url,
             category:categories(id, name)
@@ -280,7 +280,11 @@ export default function HikeDetails() {
 
       {/* Tasks Section */}
       <TaskSection
-        tasks={tasks || []}
+        tasks={(tasks || []).map(task => ({
+          ...task,
+          completed: !!task.completed,
+          created_at: task.created_at || ''
+        }))}
         hikeId={id}
         expanded={expandedSections.tasks}
         onToggle={() => toggleSection('tasks')}
@@ -288,7 +292,18 @@ export default function HikeDetails() {
 
       {/* Gear Section */}
       <GearSection
-        gear={regularGear}
+        gear={regularGear.map(item => ({
+          id: item.id,
+          name: item.gear?.name || '',
+          weight_kg: item.gear?.weight_kg || 0,
+          quantity: item.quantity || 1,
+          category: item.gear?.category,
+          checked: item.checked || false,
+          location: item.gear.location || '',
+          notes: item.notes || '',
+          is_worn: item.gear?.is_worn || false,
+          image_url: item.gear?.image_url || undefined
+        }))}
         hikeId={id}
         expanded={expandedSections.gear}
         onToggle={() => toggleSection('gear')}
@@ -296,7 +311,18 @@ export default function HikeDetails() {
       />
 
       <GearSection
-        gear={wearableGear}
+        gear={wearableGear.map(item => ({
+          id: item.id,
+          name: item.gear?.name || '',
+          weight_kg: item.gear?.weight_kg || 0,
+          quantity: item.quantity || 1,
+          category: item.gear?.category,
+          checked: item.checked || false,
+          location: item.gear.location || '',
+          notes: item.notes || '',
+          is_worn: item.gear?.is_worn || false,
+          image_url: item.gear?.image_url || undefined
+        }))}
         hikeId={id}
         expanded={expandedSections.wearable}
         onToggle={() => toggleSection('wearable')}

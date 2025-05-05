@@ -19,7 +19,7 @@ type Hike = {
   type: string | null;
   start_location: string | null;
   end_location: string | null;
-  distance_km: number | null;
+  distance_km?: number | null;
   status: string;
 };
 
@@ -51,7 +51,7 @@ export default function HikeList() {
       const { data, error } = await query;
       
       if (error) throw error;
-      return data as Hike[];
+      return data as unknown as Hike[];
     },
     enabled: !!user,
   });

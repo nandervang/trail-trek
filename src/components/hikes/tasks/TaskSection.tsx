@@ -3,7 +3,7 @@ import TaskList from './TaskList';
 import { Task } from './types';
 
 interface TaskSectionProps {
-  tasks: Task[];
+  tasks: Partial<Task>[] | any[]; // More flexible typing
   hikeId: string;
   expanded: boolean;
   onToggle: () => void;

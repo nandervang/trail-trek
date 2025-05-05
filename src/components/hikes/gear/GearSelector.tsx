@@ -25,6 +25,7 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
           name,
           weight_kg,
           image_url,
+          quantity,
           category:categories(id, name)
         `)
         .eq('is_worn', isWearable || false);
@@ -36,6 +37,8 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
 
   const selectedGear = availableGear?.find(gear => gear.id === selectedGearId);
 
+  console.log('Selected Gear:', selectedGear);
+
   const handleSubmit = () => {
     if (!selectedGearId) return;
     onSelect(selectedGearId, quantity, notes);
@@ -46,6 +49,8 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
       <div>
         <label className="label">Select Gear</label>
         <select
+          name="gear"
+          title='Select gear item'
           value={selectedGearId}
           onChange={(e) => setSelectedGearId(e.target.value)}
           className="input"
@@ -53,7 +58,7 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
           <option value="">Choose gear item...</option>
           {availableGear?.map((item) => (
             <option key={item.id} value={item.id}>
-              {item.name} ({formatWeight(item.weight_kg)})
+              {item.name} ({formatWeight(item.weight_kg || 0)})
             </option>
           ))}
         </select>
@@ -64,6 +69,7 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
           <label className="label">Quantity</label>
           <input
             type="number"
+            aria-label='Quantity'
             min="1"
             value={quantity}
             onChange={(e) => setQuantity(parseInt(e.target.value))}

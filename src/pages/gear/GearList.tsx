@@ -333,7 +333,7 @@ export default function GearList() {
                       Food
                     </h2>
                     <div className="text-sm text-gray-500">
-                      {foodStats?.totalItems} items • {formatWeight(foodStats?.totalWeight)} • {foodStats?.totalCalories} calories
+                      {foodStats?.totalItems} items • {formatWeight(foodStats?.totalWeight || 0)} • {foodStats?.totalCalories || 0} calories
                     </div>
                   </div>
                 </div>

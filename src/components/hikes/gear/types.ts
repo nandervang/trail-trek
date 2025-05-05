@@ -1,15 +1,19 @@
 export interface GearItem {
   id: string;
-  name: string;
-  weight_kg: number;
-  quantity: number;
   checked?: boolean;
-  is_worn?: boolean;
+  quantity: number;
+  notes?: string;
+  // Either directly on the item
+  name?: string;
+  weight_kg?: number;
   image_url?: string;
   location?: string;
-  notes?: string;
-  gear?: {
+  category?: {
     id: string;
+    name: string;
+  };
+  // Or inside a nested gear property
+  gear?: {
     name: string;
     weight_kg: number;
     image_url?: string;
@@ -19,11 +23,4 @@ export interface GearItem {
       name: string;
     };
   };
-}
-
-export interface CategoryStats {
-  items: GearItem[];
-  totalWeight: number;
-  itemCount: number;
-  wornCount: number;
 }
