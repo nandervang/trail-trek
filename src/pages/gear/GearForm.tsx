@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import useCategories from '@/hooks/useCategories';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, Plus, Trash, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash, Image as ImageIcon, Wand } from 'lucide-react';
 import type { Database } from '@/types/supabase';
 
-type GearItem = Database['public']['Tables']['gear_items']['Row'];
+type GearItem = Database['public']['Tables']['gear_items']['Row'] & {
+  purpose: string | null;
+  volume: string | null;
+  sizes: string | null;
+};
+
 type GearItemFormData = {
   name: string;
   description: string;
@@ -21,6 +26,9 @@ type GearItemFormData = {
   image_url: string;
   location: string;
   notes: string;
+  purpose: string;
+  volume: string;
+  sizes: string;
 };
 
 export default function GearForm() {
@@ -32,23 +40,12 @@ export default function GearForm() {
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
   const isEditMode = !!id;
   
   const { categories, createCategory } = useCategories();
   
-  const { register, handleSubmit, setValue, formState: { errors }, reset } = useForm<GearItemFormData>({
-    defaultValues: {
-      name: '',
-      description: '',
-      weight_kg: 0,
-      category_id: '',
-      quantity: 1,
-      is_worn: false,
-      image_url: '',
-      location: '',
-      notes: '',
-    }
-  });
+  const { register, handleSubmit, setValue, watch, formState: { errors }, reset } = useForm<GearItemFormData>();
   
   const { data: gearItem, isLoading } = useQuery({
     queryKey: ['gear', id],
@@ -57,7 +54,7 @@ export default function GearForm() {
       
       const { data, error } = await supabase
         .from('gear_items')
-        .select('*')
+        .select('*, category:categories(*)')
         .eq('id', id)
         .eq('user_id', user.id)
         .single();
@@ -67,6 +64,75 @@ export default function GearForm() {
     },
     enabled: !!user && !!id,
   });
+
+  const getGearInfo = async () => {
+    setIsLoadingAI(true);
+    try {
+      const name = watch('name');
+      const category = categories?.find(c => c.id === watch('category_id'))?.name;
+      
+      if (!name || !category) {
+        toast.error('Please enter a name and select a category first');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-gear-info`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name, category }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response format from AI service');
+      }
+      
+      // Update all relevant fields with AI response
+      if (data.description) setValue('description', data.description);
+      if (data.purpose) setValue('purpose', data.purpose);
+      if (data.volume) setValue('volume', data.volume);
+      if (data.sizes) setValue('sizes', data.sizes);
+      
+      // Update weight if provided
+      if (data.weight_kg && !isNaN(data.weight_kg)) {
+        setValue('weight_kg', parseFloat(data.weight_kg));
+      }
+      
+      // Update image if provided
+      if (data.image_url) {
+        setValue('image_url', data.image_url);
+        setImagePreview(data.image_url);
+      }
+      
+      // Update category if suggested
+      if (data.suggested_category) {
+        const suggestedCategory = categories?.find(
+          c => c.name.toLowerCase() === data.suggested_category.toLowerCase()
+        );
+        if (suggestedCategory && !watch('category_id')) {
+          setValue('category_id', suggestedCategory.id);
+        }
+      }
+      
+      toast.success('Gear information updated');
+    } catch (error) {
+      console.error('AI Info Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to get gear information');
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
   
   useEffect(() => {
     if (gearItem) {
@@ -80,6 +146,9 @@ export default function GearForm() {
         image_url: gearItem.image_url || '',
         location: gearItem.location || '',
         notes: gearItem.notes || '',
+        purpose: gearItem.purpose || '',
+        volume: gearItem.volume || '',
+        sizes: gearItem.sizes || '',
       });
       if (gearItem.image_url) {
         setImagePreview(gearItem.image_url);
@@ -278,18 +347,6 @@ export default function GearForm() {
               )}
             </div>
             
-            <div className="md:col-span-2">
-              <label htmlFor="description" className="label">
-                Description
-              </label>
-              <textarea
-                id="description"
-                rows={3}
-                className="input"
-                {...register('description')}
-              ></textarea>
-            </div>
-            
             <div>
               <label htmlFor="weight_kg" className="label">
                 Weight (kg) *
@@ -365,7 +422,7 @@ export default function GearForm() {
                 <p className="mt-1 text-sm text-error-500">{errors.category_id.message}</p>
               )}
             </div>
-            
+
             <div>
               <label htmlFor="quantity" className="label">
                 Quantity
@@ -412,6 +469,58 @@ export default function GearForm() {
             </div>
 
             <div className="md:col-span-2">
+              <label htmlFor="description" className="label">
+                Description
+              </label>
+              <textarea
+                id="description"
+                rows={3}
+                className="input"
+                {...register('description')}
+                placeholder="General description and main features"
+              ></textarea>
+            </div>
+
+            <div className="md:col-span-2">
+              <label htmlFor="purpose" className="label">
+                Purpose & Use Cases
+              </label>
+              <textarea
+                id="purpose"
+                rows={3}
+                className="input"
+                {...register('purpose')}
+                placeholder="Specific use cases and when to use this item"
+              ></textarea>
+            </div>
+
+            <div>
+              <label htmlFor="volume" className="label">
+                Volume
+              </label>
+              <input
+                id="volume"
+                type="text"
+                className="input"
+                {...register('volume')}
+                placeholder="e.g., 30L, 2000 cu.in."
+              />
+            </div>
+
+            <div>
+              <label htmlFor="sizes" className="label">
+                Sizes/Dimensions
+              </label>
+              <input
+                id="sizes"
+                type="text"
+                className="input"
+                {...register('sizes')}
+                placeholder="e.g., 20x30x40cm, M/L/XL"
+              />
+            </div>
+
+            <div className="md:col-span-2">
               <label htmlFor="notes" className="label">
                 Notes
               </label>
@@ -454,16 +563,27 @@ export default function GearForm() {
           </div>
           
           <div className="flex justify-between pt-6">
-            {isEditMode && (
+            <div className="flex space-x-3">
+              {isEditMode && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="btn flex items-center text-error-600 bg-error-50 hover:bg-error-100"
+                >
+                  <Trash className="h-4 w-4 mr-2" /> Delete
+                </button>
+              )}
               <button
                 type="button"
-                onClick={handleDelete}
-                className="btn flex items-center text-error-600 bg-error-50 hover:bg-error-100"
+                onClick={getGearInfo}
+                disabled={isLoadingAI}
+                className="btn btn-outline flex items-center"
               >
-                <Trash className="h-4 w-4 mr-2" /> Delete
+                <Wand className="h-4 w-4 mr-2" />
+                {isLoadingAI ? 'Getting Info...' : 'Get Info with AI'}
               </button>
-            )}
-            <div className="ml-auto flex space-x-3">
+            </div>
+            <div className="flex space-x-3">
               <Link to="/gear" className="btn btn-outline">
                 Cancel
               </Link>

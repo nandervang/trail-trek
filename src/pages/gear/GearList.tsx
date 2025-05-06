@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { Plus, Search, Package2, Utensils } from 'lucide-react';
+import { Plus, Search, Package2, Utensils, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatWeight } from '@/utils/weight';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import GearDetailsModal from '@/components/gear/GearDetailsModal';
 
 type GearItem = {
   id: string;
@@ -23,6 +24,9 @@ type GearItem = {
   image_url: string | null;
   location: string | null;
   notes: string | null;
+  purpose: string | null;
+  volume: string | null;
+  sizes: string | null;
 };
 
 type FoodItem = {
@@ -47,6 +51,7 @@ type GroupedGear = {
 export default function GearList() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGear, setSelectedGear] = useState<GearItem | null>(null);
   
   const { data: gearWithCategories, isLoading: isLoadingGear } = useQuery({
     queryKey: ['gear', searchQuery],
@@ -295,12 +300,20 @@ export default function GearList() {
                             </span>
                           </td>
                           <td className="p-4">
-                            <Link 
-                              to={`/gear/${item.id}`}
-                              className="text-sm text-primary-900 hover:text-primary-800 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              Edit
-                            </Link>
+                            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => setSelectedGear(item)}
+                                className="text-primary-600 hover:text-primary-800"
+                              >
+                                <Info className="h-4 w-4" />
+                              </button>
+                              <Link 
+                                to={`/gear/${item.id}`}
+                                className="text-sm text-primary-900 hover:text-primary-800"
+                              >
+                                Edit
+                              </Link>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -407,6 +420,14 @@ export default function GearList() {
           </div>
         )}
       </motion.div>
+
+      {selectedGear && (
+        <GearDetailsModal
+          isOpen={!!selectedGear}
+          onClose={() => setSelectedGear(null)}
+          gear={selectedGear}
+        />
+      )}
     </div>
   );
 }

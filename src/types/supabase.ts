@@ -55,6 +55,9 @@ export interface Database {
           image_url: string | null
           location: string | null
           notes: string | null
+          volume: string | null
+          sizes: string | null
+          purpose: string | null
         }
         Insert: {
           id?: string
@@ -69,6 +72,9 @@ export interface Database {
           image_url?: string | null
           location?: string | null
           notes?: string | null
+          volume?: string | null
+          sizes?: string | null
+          purpose?: string | null
         }
         Update: {
           id?: string
@@ -83,6 +89,9 @@ export interface Database {
           image_url?: string | null
           location?: string | null
           notes?: string | null
+          volume?: string | null
+          sizes?: string | null
+          purpose?: string | null
         }
         Relationships: [
           {
