@@ -75,7 +75,11 @@ export default function GearForm() {
         toast.error('Please enter a name and select a category first');
         return;
       }
-
+  
+      // Debug log to check environment variables
+      console.log('API URL:', import.meta.env.VITE_SUPABASE_URL);
+      console.log('Auth key available:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+  
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-gear-info`,
         {
@@ -87,48 +91,44 @@ export default function GearForm() {
           body: JSON.stringify({ name, category }),
         }
       );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+  
+      // Log response status to diagnose issues
+      console.log('Response status:', response.status);
+      
+      // Special handling for quota exceeded errors
+      if (response.status === 429) {
+        const errorData = await response.json();
+        toast.error(errorData.message || 'AI service quota exceeded. You can still enter gear details manually.');
+        return;
       }
-
+      
+      // For other errors
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+  
       const data = await response.json();
       
-      if (!data || typeof data !== 'object') {
-        throw new Error('Invalid response format from AI service');
+      // Check if we got mock data instead of AI data
+      if (data._source === "mock_data") {
+        toast.info('Using estimated data. The AI service is currently unavailable.');
       }
       
-      // Update all relevant fields with AI response
-      if (data.description) setValue('description', data.description);
-      if (data.purpose) setValue('purpose', data.purpose);
+      // Update form values with the received data
+      setValue('description', data.description || '');
+      setValue('purpose', data.purpose || '');
+      setValue('weight_kg', data.weight_kg || 0);
+      
       if (data.volume) setValue('volume', data.volume);
       if (data.sizes) setValue('sizes', data.sizes);
+      if (data.image_url) setValue('image_url', data.image_url);
       
-      // Update weight if provided
-      if (data.weight_kg && !isNaN(data.weight_kg)) {
-        setValue('weight_kg', parseFloat(data.weight_kg));
-      }
-      
-      // Update image if provided
-      if (data.image_url) {
-        setValue('image_url', data.image_url);
-        setImagePreview(data.image_url);
-      }
-      
-      // Update category if suggested
-      if (data.suggested_category) {
-        const suggestedCategory = categories?.find(
-          c => c.name.toLowerCase() === data.suggested_category.toLowerCase()
-        );
-        if (suggestedCategory && !watch('category_id')) {
-          setValue('category_id', suggestedCategory.id);
-        }
-      }
-      
-      toast.success('Gear information updated');
+      toast.success('Gear information loaded!');
     } catch (error) {
       console.error('AI Info Error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to get gear information');
+      toast.error('Failed to get gear information. Please try again or enter details manually.');
     } finally {
       setIsLoadingAI(false);
     }
