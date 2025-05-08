@@ -30,6 +30,13 @@
     background-position: center, center;
     background-repeat: no-repeat, repeat;
   }
+
+  /* Add padding at the bottom on mobile to account for the bottom navigation */
+  @media (max-width: 1024px) {
+    body {
+      padding-bottom: 60px;
+    }
+  }
   
   /* Base typography */
   h1, h2, h3, h4, h5, h6 {
@@ -40,6 +47,25 @@
   /* Responsive typography */
   h1 {
     @apply text-3xl sm:text-4xl lg:text-5xl 3xl:text-6xl 4xl:text-7xl;
+  }
+  
+  /* Reduce heading sizes on mobile */
+  @media (max-width: 640px) {
+    h1 {
+      @apply text-2xl;
+    }
+    
+    h2 {
+      @apply text-xl;
+    }
+    
+    h3 {
+      @apply text-lg;
+    }
+    
+    p, li, div {
+      @apply text-sm;
+    }
   }
   
   h2 {
@@ -81,6 +107,13 @@
     @apply sm:px-8 sm:py-3 3xl:px-10 3xl:py-4;
   }
   
+  /* Make buttons more tap-friendly on mobile */
+  @media (max-width: 640px) {
+    .btn {
+      @apply px-4 py-2 min-h-[40px] text-sm;
+    }
+  }
+  
   .btn-primary {
     @apply bg-primary-900 text-white hover:bg-primary-800 focus-visible:ring-primary-900;
   }
@@ -106,15 +139,57 @@
   /* Mobile optimizations */
   @media (max-width: 640px) {
     .card {
-      @apply p-4;
+      @apply p-3 mx-0 my-2;
     }
 
     .card .card {
-      @apply p-3 shadow-sm;
+      @apply p-2 shadow-sm;
     }
 
+    /* Reduce spacing between elements */
     .space-y-8 > * {
-      @apply my-4;
+      @apply my-3;
+    }
+    
+    .space-y-6 > * {
+      @apply my-2;
+    }
+    
+    .space-y-4 > * {
+      @apply my-1.5;
+    }
+    
+    /* Reduce table padding */
+    table th, 
+    table td {
+      @apply px-2 py-2;
+    }
+    
+    /* Optimize form elements */
+    .input {
+      @apply h-10 py-1;
+    }
+    
+    .label {
+      @apply text-xs mb-0.5;
+    }
+    
+    /* Adjust grid columns on mobile */
+    .grid-cols-2 {
+      @apply grid-cols-1;
+    }
+    
+    .grid-cols-3 {
+      @apply grid-cols-1;
+    }
+    
+    .grid-cols-4 {
+      @apply grid-cols-2;
+    }
+    
+    /* Use smaller gap on mobile */
+    .gap-4, .gap-6, .gap-8 {
+      @apply gap-2;
     }
   }
   
@@ -134,11 +209,11 @@
   }
 
   .mobile-bottom-nav {
-    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-2 px-4 flex justify-around items-center z-40 lg:hidden;
+    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-1 px-2 flex justify-around items-center z-40 lg:hidden;
   }
 
   .mobile-menu-item {
-    @apply flex flex-col items-center text-gray-600 text-xs;
+    @apply flex flex-col items-center text-gray-600 text-xs py-1;
   }
 }
 

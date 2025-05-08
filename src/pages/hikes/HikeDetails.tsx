@@ -113,16 +113,50 @@ export default function HikeDetails() {
     });
   };
 
-  const { baseWeight, totalWeight } = gear?.reduce((acc, item) => {
+  // const { baseWeight, totalWeight } = gear?.reduce((acc, item) => {
+  //   const weight = (item.gear?.weight_kg || 0) * (item.quantity || 1);
+  //   if (item.gear?.is_worn) {
+  //     acc.wornWeight += weight;
+  //   } else {
+  //     acc.baseWeight += weight;
+  //   }
+  //   acc.totalWeight += weight;
+  //   return acc;
+  // }, { baseWeight: 0, wornWeight: 0, totalWeight: 0 }) ?? { baseWeight: 0, wornWeight: 0, totalWeight: 0 };
+
+
+
+  const { baseWeight, foodWeight, totalWeight, wearableWeight, bigThreeWeight } = gear?.reduce((acc, item) => {
     const weight = (item.gear?.weight_kg || 0) * (item.quantity || 1);
-    if (item.gear?.is_worn) {
-      acc.wornWeight += weight;
+    const category = item.gear?.category?.name || '';
+    
+    if (item.is_worn) {
+      acc.wearableWeight += weight;
     } else {
       acc.baseWeight += weight;
+      
+      // Calculate food weight
+      if (
+        category === 'Food'
+      ) {
+        acc.foodWeight += weight;
+      }
+      
+      // Calculate big three weight (Shelter, Backpack, Sleep System)
+      if (
+        category === 'Shelter' || 
+        category === 'Backpack' || 
+        category === 'Sleep system'
+      ) {
+        acc.bigThreeWeight += weight;
+      }
     }
     acc.totalWeight += weight;
     return acc;
-  }, { baseWeight: 0, wornWeight: 0, totalWeight: 0 }) ?? { baseWeight: 0, wornWeight: 0, totalWeight: 0 };
+  }, { baseWeight: 0, wearableWeight: 0, foodWeight: 0, totalWeight: 0, bigThreeWeight: 0 }) ?? 
+  { baseWeight: 0, wearableWeight: 0, foodWeight: 0, totalWeight: 0, bigThreeWeight: 0 };
+
+
 
   const regularGear = gear?.filter(item => !(item.gear as any).is_worn) || [];
   const wearableGear = gear?.filter(item => (item.gear as any).is_worn) || [];
@@ -274,6 +308,9 @@ export default function HikeDetails() {
         hike={hike}
         baseWeight={baseWeight}
         totalWeight={totalWeight}
+        foodWeight={foodWeight}
+        wearableWeight={wearableWeight}
+        bigThreeWeight={bigThreeWeight}
         expanded={expandedSections.details}
         onToggle={() => toggleSection('details')}
       />

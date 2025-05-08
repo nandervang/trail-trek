@@ -151,6 +151,9 @@ export default function GearList() {
     totalCalories: 0
   });
   
+
+
+
   return (
     <div className="container mx-auto px-4 py-8">
       <motion.div 
@@ -209,11 +212,6 @@ export default function GearList() {
                 <h3 className="text-lg font-light mb-2">Total Weight</h3>
                 <p className="text-2xl font-light">{formatWeight(totalStats?.totalWeight || 0)}</p>
                 <p className="text-sm text-gray-500 mt-2">{totalStats?.totalItems || 0} total items</p>
-              </div>
-              <div className="card p-6">
-                <h3 className="text-lg font-light mb-2">Food Weight</h3>
-                <p className="text-2xl font-light">{formatWeight(foodStats?.totalWeight || 0)}</p>
-                <p className="text-sm text-gray-500 mt-2">{foodStats?.totalItems || 0} food items</p>
               </div>
               <div className="card p-6">
                 <h3 className="text-lg font-light mb-2">Categories</h3>

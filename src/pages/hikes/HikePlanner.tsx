@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Printer } from 'lucide-react';
 import { useState } from 'react';
 import HikeOverview from '@/components/hikes/HikeOverview';
 import TaskSection from '@/components/hikes/tasks/TaskSection';
@@ -78,7 +78,9 @@ export default function HikePlanner() {
 
   if (!hike || !id) return null;
 
-  const { baseWeight, totalWeight, wearableWeight, bigThreeWeight } = gear?.reduce((acc, item) => {
+  
+
+  const { baseWeight, foodWeight, totalWeight, wearableWeight, bigThreeWeight } = gear?.reduce((acc, item) => {
     const weight = (item.gear?.weight_kg || 0) * (item.quantity || 1);
     const category = item.gear?.category?.name || '';
     
@@ -86,6 +88,13 @@ export default function HikePlanner() {
       acc.wearableWeight += weight;
     } else {
       acc.baseWeight += weight;
+      
+      // Calculate food weight
+      if (
+        category === 'Food'
+      ) {
+        acc.foodWeight += weight;
+      }
       
       // Calculate big three weight (Shelter, Backpack, Sleep System)
       if (
@@ -98,34 +107,37 @@ export default function HikePlanner() {
     }
     acc.totalWeight += weight;
     return acc;
-  }, { baseWeight: 0, wearableWeight: 0, totalWeight: 0, bigThreeWeight: 0 }) ?? 
-  { baseWeight: 0, wearableWeight: 0, totalWeight: 0, bigThreeWeight: 0 };
+  }, { baseWeight: 0, wearableWeight: 0, foodWeight: 0, totalWeight: 0, bigThreeWeight: 0 }) ?? 
+  { baseWeight: 0, wearableWeight: 0, foodWeight: 0, totalWeight: 0, bigThreeWeight: 0 };
+
 
   const regularGear = gear?.filter(item => !item.is_worn) || [];
   const wearableGear = gear?.filter(item => item.is_worn) || [];
 
   return (
-    <div className="container mx-auto px-4 py-8 pb-20 lg:pb-8 max-w-4xl print:py-0 print:px-0">
-      <div className="mb-8 flex items-center justify-between print:hidden">
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 pb-16 lg:pb-8 max-w-4xl print:py-0 print:px-0">
+      <div className="mb-4 sm:mb-8 flex items-center justify-between print:hidden">
         <div className="flex items-center">
-          <Link to={`/hikes/${id}`} className="text-gray-500 hover:text-gray-700 mr-4">
-            <ArrowLeft className="h-5 w-5" />
+          <Link to={`/hikes/${id}`} className="text-gray-500 hover:text-gray-700 mr-2 sm:mr-4">
+            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           </Link>
-          <h1 className="text-3xl font-light">Hike Planner</h1>
+          <h1 className="text-xl sm:text-3xl font-light">Hike Planner</h1>
         </div>
         <button 
           onClick={() => window.print()}
-          className="btn btn-primary"
+          className="btn btn-primary text-sm py-1.5 px-3 sm:py-2 sm:px-4 flex items-center"
         >
-          Print Checklist
+          <Printer className="h-4 w-4 mr-1 hidden sm:inline" />
+          Print
         </button>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-4 sm:space-y-8">
         <HikeOverview 
           hike={hike}
           baseWeight={baseWeight}
           totalWeight={totalWeight}
+          foodWeight={foodWeight}
           wearableWeight={wearableWeight}
           bigThreeWeight={bigThreeWeight}
           expanded={expandedSections.overview}

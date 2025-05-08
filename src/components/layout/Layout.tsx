@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
+import MobileNav from './MobileNav';
 import { useState } from 'react';
 
 export default function Layout() {
@@ -14,11 +15,14 @@ export default function Layout() {
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         
         <main className="flex-1 w-full">
-          <div className="py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
+          <div className="py-4 sm:py-6 px-2 sm:px-6 lg:px-8">
             <Outlet />
           </div>
         </main>
       </div>
+      
+      {/* Mobile bottom navigation */}
+      <MobileNav />
     </div>
   );
 }
