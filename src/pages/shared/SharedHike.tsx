@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { MapPin, Calendar, Route, Lock, ClipboardList } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { motion } from 'framer-motion';
+import LogSection from '@/components/hikes/logs/LogSection';
+import GallerySection from '@/components/hikes/gallery/GallerySection';
 import type { Database } from '@/types/supabase';
 
 type Hike = Database['public']['Tables']['hikes']['Row'];
@@ -205,6 +207,25 @@ export default function SharedHike() {
                 </div>
               </div>
             )}
+
+            {hike.share_logs && 
+              <LogSection
+                hikeId={hike.id}
+                expanded={true}
+                viewOnly={true} // Disable editing functionality
+              />
+            }
+            
+            {hike.share_gallery && 
+              <GallerySection
+                images={hike.images || []}
+                expanded={true}
+                descriptions={hike.image_descriptions || []}
+                viewOnly={true} // Disable editing functionality
+              />
+            }
+
+
           </div>
         </motion.div>
       </div>

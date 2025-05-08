@@ -10,6 +10,7 @@ import { Log } from './types';
 interface LogListProps {
   hikeId: string;
   onLogClick?: (log: Log) => void;
+  viewOnly?: boolean; // New prop to disable editing functionality
 }
 
 const weatherIcons = {
@@ -22,8 +23,11 @@ const weatherIcons = {
 const moodEmojis = ['😫', '😕', '😐', '🙂', '😊'];
 const difficultyLabels = ['Easy', 'Moderate', 'Challenging', 'Difficult', 'Extreme'];
 
-export default function LogList({ hikeId, onLogClick }: LogListProps) {
+export default function LogList({ hikeId, viewOnly = false, onLogClick }: LogListProps) {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+
+  console.log(viewOnly);
+
 
   const { data: logs, isLoading } = useQuery({
     queryKey: ['hike-logs', hikeId],
@@ -51,7 +55,7 @@ export default function LogList({ hikeId, onLogClick }: LogListProps) {
     );
   }
 
-  if (!logs || logs.length === 0) {
+  if (!logs || logs.length === 0 && !viewOnly) {
     return (
       <div className="text-center py-8">
         <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />

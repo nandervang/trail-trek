@@ -338,6 +338,8 @@ export interface Database {
           share_expires_at: string | null
           share_password: string | null
           share_url: string | null
+          share_gallery: boolean | null
+          share_logs: boolean | null
         }
         Insert: {
           id?: string
@@ -370,6 +372,8 @@ export interface Database {
           share_expires_at?: string | null
           share_password?: string | null
           share_url?: string | null
+          share_gallery?: boolean | null
+          share_logs?: boolean | null
         }
         Update: {
           id?: string
@@ -402,6 +406,8 @@ export interface Database {
           share_expires_at?: string | null
           share_password?: string | null
           share_url?: string | null
+          share_gallery?: boolean | null
+          share_logs?: boolean | null
         }
         Relationships: [
           {

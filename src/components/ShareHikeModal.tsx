@@ -18,6 +18,8 @@ export default function ShareHikeModal({ isOpen, onClose, hike }: ShareHikeModal
   const [expirationDate, setExpirationDate] = useState<string>('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [shareLogs, setShareLogs] = useState(hike.share_logs || false);
+  const [shareGallery, setShareGallery] = useState(hike.share_gallery || false);
 
   const shareUrl = `${window.location.origin}/shared/${hike.share_id}`;
 
@@ -40,12 +42,24 @@ export default function ShareHikeModal({ isOpen, onClose, hike }: ShareHikeModal
   });
 
   const handleSave = () => {
+    const shareId = hike.share_id || generateShareId(); // Generate if missing
     updateSharing.mutate({
       share_enabled: shareEnabled,
+      is_public: shareEnabled, // Set is_public to true when sharing is enabled
+      share_id: shareId,
+      share_logs: shareLogs, // Include share_logs
+      share_gallery: shareGallery, // Include share_gallery
       share_expires_at: expirationDate || null,
       share_password: password || null,
     });
   };
+
+  const generateShareId = () => {
+    return Math.random().toString(36).substr(2, 9); // Example ID generator
+  };
+
+  console.log('Share ID:', hike.share_id); // Debugging log
+  console.log('Share URL:', shareUrl); // Debugging log
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -153,6 +167,40 @@ export default function ShareHikeModal({ isOpen, onClose, hike }: ShareHikeModal
                     <p className="mt-1 text-sm text-gray-500">
                       Optional. Add a password for extra security.
                     </p>
+                  </div>
+
+                  {/* Share Logs */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium">Share Logs</h3>
+                      <p className="text-sm text-gray-500">Allow others to view hike logs</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={shareLogs}
+                        onChange={(e) => setShareLogs(e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                    </label>
+                  </div>
+
+                  {/* Share Image Gallery */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium">Share Image Gallery</h3>
+                      <p className="text-sm text-gray-500">Allow others to view the image gallery</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={shareGallery}
+                        onChange={(e) => setShareGallery(e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                    </label>
                   </div>
                 </>
               )}

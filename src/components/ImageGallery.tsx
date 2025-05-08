@@ -7,7 +7,7 @@ import 'react-medium-image-zoom/dist/styles.css';
 interface ImageGalleryProps {
   images: string[];
   descriptions?: string[];
-  onImagesChange: (images: string[], descriptions?: string[]) => void;
+  onImagesChange?: (images: string[], descriptions?: string[]) => void; // Made optional to support view-only mode
   onUpload?: (files: File[]) => Promise<void>;
 }
 
@@ -40,13 +40,13 @@ export default function ImageGallery({ images, descriptions = [], onImagesChange
     const newDescriptions = [...descriptions];
     newImages.splice(index, 1);
     newDescriptions.splice(index, 1);
-    onImagesChange(newImages, newDescriptions);
+    onImagesChange?.(newImages, newDescriptions);
   };
 
   const updateDescription = (index: number, description: string) => {
     const newDescriptions = [...descriptions];
     newDescriptions[index] = description;
-    onImagesChange(images, newDescriptions);
+    onImagesChange?.(images, newDescriptions);
     setEditingIndex(null);
   };
 
