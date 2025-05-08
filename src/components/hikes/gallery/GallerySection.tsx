@@ -1,4 +1,4 @@
-import { Image as ImageIcon, ChevronUp, ChevronDown } from 'lucide-react';
+import { Image as ImageIcon, ChevronUp } from 'lucide-react';
 import ImageGallery from '@/components/ImageGallery';
 
 interface GallerySectionProps {
