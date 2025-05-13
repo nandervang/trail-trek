@@ -40,7 +40,8 @@ export default function GearList({
         weight_kg: item.weight_kg,
         image_url: item.image_url,
         location: item.location, // Copy location to gear as well
-        category: item.category
+        category: item.category,
+        description: item.description,
       }
     };
   });
@@ -128,6 +129,9 @@ export default function GearList({
                         {formatWeight((item.gear.weight_kg || 0) * (item.quantity || 1))}
                       </div>
                       <div className="text-sm text-gray-500">
+                        {item.description && (
+                          <p className="text-sm text-gray-500">{item.description}</p>
+                        )}
                         {location && (
                           <span className="ml-2">📍 {location}</span>
                         )}

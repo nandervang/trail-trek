@@ -8,8 +8,8 @@ interface NavbarProps {
 
 export default function Navbar({ onMenuClick }: NavbarProps) {
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="bg-white border-b border-gray-200 top-0 z-30">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-14 sm:h-16">
           <div className="flex">
             <button

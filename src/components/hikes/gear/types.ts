@@ -12,6 +12,7 @@ export interface GearItem {
     id: string;
     name: string;
   };
+  description: string | null;
   // Or inside a nested gear property
   gear?: {
     name: string;
@@ -22,5 +23,6 @@ export interface GearItem {
       id: string;
       name: string;
     };
+    description?: string;
   };
 }

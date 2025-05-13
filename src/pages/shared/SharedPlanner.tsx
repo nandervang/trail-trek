@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Printer } from 'lucide-react';
 import { useState } from 'react';
 import HikeOverview from '@/components/hikes/HikeOverview';
 import TaskSection from '@/components/hikes/tasks/TaskSection';
@@ -67,6 +67,7 @@ export default function SharedPlanner() {
             id,
             name,
             weight_kg,
+            description,
             image_url,
             category:categories(id, name)
           )
@@ -100,7 +101,7 @@ export default function SharedPlanner() {
     );
   }
 
-  const { baseWeight, totalWeight, wearableWeight, bigThreeWeight } = gear?.reduce((acc, item) => {
+  const { baseWeight, totalWeight, foodWeight, wearableWeight, bigThreeWeight } = gear?.reduce((acc, item) => {
     const weight = (item.gear?.weight_kg || 0) * (item.quantity || 1);
     const category = item.gear?.category?.name || '';
     
@@ -108,7 +109,14 @@ export default function SharedPlanner() {
       acc.wearableWeight += weight;
     } else {
       acc.baseWeight += weight;
-      
+
+      // Calculate food weight
+      if (
+        category === 'Food'
+      ) {
+        acc.foodWeight += weight;
+      }
+
       if (
         category === 'Shelter' || 
         category === 'Backpack' || 
@@ -119,8 +127,8 @@ export default function SharedPlanner() {
     }
     acc.totalWeight += weight;
     return acc;
-  }, { baseWeight: 0, wearableWeight: 0, totalWeight: 0, bigThreeWeight: 0 }) ?? 
-  { baseWeight: 0, wearableWeight: 0, totalWeight: 0, bigThreeWeight: 0 };
+  }, { baseWeight: 0, wearableWeight: 0, foodWeight: 0, totalWeight: 0, bigThreeWeight: 0 }) ?? 
+  { baseWeight: 0, wearableWeight: 0, foodWeight: 0, totalWeight: 0, bigThreeWeight: 0 };
 
   const regularGear = gear?.filter(item => !item.is_worn) || [];
   const wearableGear = gear?.filter(item => item.is_worn) || [];
@@ -134,6 +142,13 @@ export default function SharedPlanner() {
           </Link>
           <h1 className="text-3xl font-light">{hike.name} - Planner</h1>
         </div>
+        <button 
+          onClick={() => window.print()}
+          className="btn btn-primary text-sm py-1.5 px-3 sm:py-2 sm:px-4 flex items-center"
+        >
+          <Printer className="h-4 w-4 mr-1 hidden sm:inline" />
+          Print
+        </button>
       </div>
 
       <div className="space-y-8">
@@ -142,6 +157,7 @@ export default function SharedPlanner() {
           baseWeight={baseWeight}
           totalWeight={totalWeight}
           wearableWeight={wearableWeight}
+          foodWeight={foodWeight}
           bigThreeWeight={bigThreeWeight}
           expanded={expandedSections.overview}
           onToggle={() => toggleSection('overview')}

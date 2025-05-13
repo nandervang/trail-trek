@@ -73,6 +73,7 @@ export default function HikeDetails() {
             weight_kg,
             location,
             is_worn,
+            description,
             image_url,
             category:categories(id, name)
           )

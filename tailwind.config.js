@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Fira Sans', 'Inter', 'sans-serif'],
       },
       screens: {
         '3xl': '1920px', // Large desktop/TV screens

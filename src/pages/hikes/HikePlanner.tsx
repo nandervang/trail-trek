@@ -65,6 +65,7 @@ export default function HikePlanner() {
             name,
             weight_kg,
             image_url,
+            description,
             location,
             category:categories(id, name)
           )
