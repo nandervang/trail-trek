@@ -6,7 +6,7 @@ import { GearItem } from './types';
 
 interface GearSelectorProps {
   isWearable?: boolean;
-  onSelect: (gearId: string, quantity: number, notes: string, isWearable: boolean) => void;
+  onSelect: (gearId: string, quantity: number, notes: string) => void;
   onCancel: () => void;
 }
 
@@ -14,7 +14,6 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
   const [selectedGearId, setSelectedGearId] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
-  const [isGearWearable, setIsGearWearable] = useState(false); // New state for wearable gear
 
   const { data: availableGear } = useQuery({
     queryKey: ['available-gear', isWearable],
@@ -30,7 +29,7 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
           category:categories(id, name)
         `)
         .eq('is_worn', isWearable || false);
-
+        
       if (error) throw error;
       return data as GearItem[];
     },
@@ -42,7 +41,7 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
 
   const handleSubmit = () => {
     if (!selectedGearId) return;
-    onSelect(selectedGearId, quantity, notes, isGearWearable); // Pass isGearWearable to onSelect
+    onSelect(selectedGearId, quantity, notes);
   };
 
   return (
@@ -87,16 +86,6 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
             className="input"
           />
         </div>
-      </div>
-
-      <div>
-        <label className="label">Mark as Wearable</label>
-        <input
-          type="checkbox"
-          checked={isGearWearable}
-          onChange={(e) => setIsGearWearable(e.target.checked)}
-          className="checkbox"
-        />
       </div>
 
       <div className="flex justify-end space-x-2">
