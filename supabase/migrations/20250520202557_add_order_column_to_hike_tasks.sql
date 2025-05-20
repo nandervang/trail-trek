@@ -1,0 +1,1 @@
+ALTER TABLE hike_tasks ADD COLUMN "order" INTEGER;

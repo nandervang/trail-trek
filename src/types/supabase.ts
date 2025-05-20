@@ -281,6 +281,7 @@ export interface Database {
           description: string
           completed: boolean | null
           created_at: string | null
+          order: number | null
         }
         Insert: {
           id?: string
@@ -288,6 +289,7 @@ export interface Database {
           description: string
           completed?: boolean | null
           created_at?: string | null
+          order: number | null
         }
         Update: {
           id?: string
@@ -295,6 +297,7 @@ export interface Database {
           description?: string
           completed?: boolean | null
           created_at?: string | null
+          order: number | null
         }
         Relationships: [
           {

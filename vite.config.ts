@@ -1,9 +1,10 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import { defineConfig as defineVitestConfig } from 'vitest/config';
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineVitestConfig({
   plugins: [react()],
   resolve: {
     alias: {
@@ -18,4 +19,4 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
   },
-})
+});
