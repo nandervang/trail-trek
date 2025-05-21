@@ -54,9 +54,11 @@ export default function TaskList({ tasks, hikeId, viewOnly = false }: TaskListPr
 
   const addTask = useMutation({
     mutationFn: async (description: string) => {
+      const newOrder = tasks?.length ? Math.max(...tasks.map(task => task.order || 0)) + 1 : 1;
+
       const { data, error } = await supabase
         .from('hike_tasks')
-        .insert([{ hike_id: hikeId, description }])
+        .insert([{ hike_id: hikeId, description, order: newOrder }])
         .select()
         .single();
 

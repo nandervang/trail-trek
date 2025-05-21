@@ -297,7 +297,7 @@ export interface Database {
           description?: string
           completed?: boolean | null
           created_at?: string | null
-          order: number | null
+          order?: number | null
         }
         Relationships: [
           {
