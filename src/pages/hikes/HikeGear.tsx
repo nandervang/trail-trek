@@ -79,9 +79,17 @@ function HikeGear({ hikeId }: HikeGearProps) {
     wornCount: number;
   }>);
 
+  // Sort grouped gear alphabetically by category name
+  const sortedGroupedGear = Object.keys(groupedGear)
+    .sort((a, b) => a.localeCompare(b))
+    .reduce((sortedAcc, key) => {
+      sortedAcc[key] = groupedGear[key];
+      return sortedAcc;
+    }, {} as typeof groupedGear);
+
   return (
     <div className="space-y-8">
-      {Object.entries(groupedGear).map(([category, data]) => (
+      {Object.entries(sortedGroupedGear).map(([category, data]) => (
         <div key={category} className="card overflow-hidden">
           <div className="px-6 py-4 bg-gray-50 border-b border-gray-100">
             <div className="flex justify-between items-center">

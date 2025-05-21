@@ -28,16 +28,14 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
           quantity,
           category:categories(id, name)
         `)
-        .eq('is_worn', isWearable || false);
-        
+        .or(isWearable 
+          ? 'is_worn.eq.true,category_id.eq.904455e4-4e83-4ca7-beca-9205273b8cfe' 
+          : 'is_worn.eq.false');
+  
       if (error) throw error;
       return data as GearItem[];
     },
   });
-
-  const selectedGear = availableGear?.find(gear => gear.id === selectedGearId);
-
-  console.log('Selected Gear:', selectedGear);
 
   const handleSubmit = () => {
     if (!selectedGearId) return;

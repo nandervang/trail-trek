@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -52,12 +52,13 @@ export default function GearList() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGear, setSelectedGear] = useState<GearItem | null>(null);
-  
-  const { data: gearWithCategories, isLoading: isLoadingGear } = useQuery({
+  const [groupedGear, setGroupedGear] = useState<GroupedGear>({}); // Converted groupedGear to state
+
+  const { data: gearWithCategories, isLoading: isLoadingGear, refetch: refetchGearWithCategories } = useQuery({
     queryKey: ['gear', searchQuery],
     queryFn: async () => {
       if (!user) throw new Error("User not authenticated");
-      
+
       let query = supabase
         .from('gear_items')
         .select(`
@@ -65,18 +66,53 @@ export default function GearList() {
           category:categories(id, name)
         `)
         .eq('user_id', user.id);
-        
+
       if (searchQuery) {
         query = query.ilike('name', `%${searchQuery}%`);
       }
-      
+
       const { data, error } = await query;
-      
+
       if (error) throw error;
       return data as GearItem[];
     },
     enabled: !!user,
   });
+
+  useEffect(() => {
+    if (gearWithCategories) {
+      const grouped = gearWithCategories.reduce((acc: GroupedGear, item) => {
+        const categoryName = item.category.name;
+        if (!acc[categoryName]) {
+          acc[categoryName] = {
+            items: [],
+            totalWeight: 0,
+            itemCount: 0,
+            wornCount: 0,
+          };
+        }
+
+        acc[categoryName].items.push(item);
+        acc[categoryName].totalWeight += item.weight_kg * item.quantity;
+        acc[categoryName].itemCount += item.quantity;
+        if (item.is_worn) {
+          acc[categoryName].wornCount++;
+        }
+
+        return acc;
+      }, {});
+
+      // Sort grouped gear alphabetically by category name
+      const sortedGrouped = Object.keys(grouped)
+        .sort((a, b) => a.localeCompare(b))
+        .reduce((sortedAcc, key) => {
+          sortedAcc[key] = grouped[key];
+          return sortedAcc;
+        }, {} as GroupedGear);
+
+      setGroupedGear(sortedGrouped);
+    }
+  }, [gearWithCategories]);
 
   const { data: foodItems, isLoading: isLoadingFood } = useQuery({
     queryKey: ['food', searchQuery],
@@ -99,28 +135,6 @@ export default function GearList() {
     },
     enabled: !!user,
   });
-
-  // Group gear by category and calculate statistics
-  const groupedGear = gearWithCategories?.reduce((acc: GroupedGear, item) => {
-    const categoryName = item.category.name;
-    if (!acc[categoryName]) {
-      acc[categoryName] = {
-        items: [],
-        totalWeight: 0,
-        itemCount: 0,
-        wornCount: 0
-      };
-    }
-    
-    acc[categoryName].items.push(item);
-    acc[categoryName].totalWeight += item.weight_kg * item.quantity;
-    acc[categoryName].itemCount += item.quantity;
-    if (item.is_worn) {
-      acc[categoryName].wornCount++;
-    }
-    
-    return acc;
-  }, {});
 
   const totalStats = gearWithCategories?.reduce((acc, item) => {
     acc.totalWeight += item.weight_kg * item.quantity;
@@ -151,8 +165,28 @@ export default function GearList() {
     totalCalories: 0
   });
   
+  const handleCategoryNameChange = async (oldCategoryName: string, newCategoryName: string) => {
+    if (oldCategoryName === newCategoryName || !newCategoryName.trim()) return;
 
+    // Optimistically update the UI
+    const updatedGroupedGear = { ...groupedGear };
+    updatedGroupedGear[newCategoryName] = updatedGroupedGear[oldCategoryName];
+    delete updatedGroupedGear[oldCategoryName];
+    setGroupedGear(updatedGroupedGear);
 
+    const { error } = await supabase
+      .from('categories')
+      .update({ name: newCategoryName })
+      .eq('name', oldCategoryName);
+
+    if (error) {
+      console.error('Error updating category name:', error.message);
+      return;
+    }
+
+    // Refetch the data to ensure consistency
+    refetchGearWithCategories();
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -225,7 +259,14 @@ export default function GearList() {
               <div key={category} className="card overflow-hidden">
                 <div className="px-6 py-4 bg-gray-50 border-b border-gray-100">
                   <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-light">{category}</h2>
+                    <h3 className="font-medium text-gray-900">
+                      <input
+                        type="text"
+                        defaultValue={category} // Use defaultValue to make the input editable
+                        onBlur={(e) => handleCategoryNameChange(category, e.target.value)} // Update on blur
+                        className="bg-transparent focus:outline-none focus:border-primary-500"
+                      />
+                    </h3>
                     <div className="text-sm text-gray-500">
                       {data.itemCount} items • {formatWeight(data.totalWeight)}
                     </div>

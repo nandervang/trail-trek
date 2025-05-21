@@ -57,8 +57,16 @@ export default function GearList({
     return acc;
   }, {} as Record<string, any[]>);
   
+  // Sort grouped gear alphabetically by category name
+  const sortedGroupedGear = Object.keys(groupedGear)
+    .sort((a, b) => a.localeCompare(b))
+    .reduce((sortedAcc, key) => {
+      sortedAcc[key] = groupedGear[key];
+      return sortedAcc;
+    }, {} as Record<string, any[]>);
+  
   // If no items were grouped, show a message
-  if (Object.keys(groupedGear).length === 0) {
+  if (Object.keys(sortedGroupedGear).length === 0) {
     return (
       <div className="p-6 text-center text-gray-500">
         No gear items found. The data may not match the expected format.
@@ -68,7 +76,7 @@ export default function GearList({
 
   return (
     <div className="space-y-4">
-      {Object.entries(groupedGear).map(([category, categoryItems]) => (
+      {Object.entries(sortedGroupedGear).map(([category, categoryItems]) => (
         <div key={category} className="bg-white rounded-lg shadow-sm">
           <div className="px-4 py-3 border-b border-gray-100">
             <h3 className="font-medium text-gray-900">{category}</h3>
