@@ -4,13 +4,14 @@ import 'react-medium-image-zoom/dist/styles.css';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { formatWeight } from '@/utils/weight';
+import { useEffect } from 'react';
 
 interface HikeGearProps {
   hikeId: string;
 }
 
 function HikeGear({ hikeId }: HikeGearProps) {
-  const { data: gearItems, isLoading } = useQuery({
+  const { data: gearItems, isLoading, refetch: refetchHikeGear } = useQuery({
     queryKey: ['hikeGear', hikeId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -34,6 +35,30 @@ function HikeGear({ hikeId }: HikeGearProps) {
       return data;
     },
   });
+
+  const handleRemoveGear = async (gearId: string) => {
+    console.log('Removing gear with ID:', gearId);
+
+    if (!confirm('Are you sure you want to remove this gear from the hike?')) return;
+
+    const { error } = await supabase
+      .from('hike_gear')
+      .delete()
+      .eq('gear_id', gearId)
+      .eq('hike_id', hikeId);
+
+    if (error) {
+      console.error('Error removing gear:', error.message);
+      return;
+    }
+
+    // Refetch the gear list to update the UI
+    refetchHikeGear();
+  };
+
+  useEffect(() => {
+    refetchHikeGear();
+  }, [gearItems]);
 
   if (isLoading) {
     return (
@@ -110,6 +135,7 @@ function HikeGear({ hikeId }: HikeGearProps) {
                   <th className="text-left text-sm font-light uppercase tracking-wider text-gray-600 p-4">Quantity</th>
                   <th className="text-left text-sm font-light uppercase tracking-wider text-gray-600 p-4">Total</th>
                   <th className="text-left text-sm font-light uppercase tracking-wider text-gray-600 p-4">Type</th>
+                  <th className="text-left text-sm font-light uppercase tracking-wider text-gray-600 p-4"></th>
                 </tr>
               </thead>
               <tbody>
@@ -151,6 +177,16 @@ function HikeGear({ hikeId }: HikeGearProps) {
                       }`}>
                         {item.is_worn ? 'Worn' : 'Carried'}
                       </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleRemoveGear(item.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

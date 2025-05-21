@@ -77,6 +77,35 @@ export default function GearSection({
     addGearToHike.mutate({ gearId, quantity, notes });
   };
 
+  const handleRemoveGear = async (gearId: string) => {
+    console.log(`Removing gear with ID: ${gearId} from hike with ID: ${hikeId}`);
+    try {
+      console.log('Attempting to delete gear with the following details:', {
+        gearId,
+        hikeId,
+        userId: (await supabase.auth.getUser()).data?.user?.id, // Log the current user ID
+      });
+
+      const { error } = await supabase
+        .from('hike_gear')
+        .delete()
+        .eq('id', gearId) // Use 'id' instead of 'gear_id'
+        .eq('hike_id', hikeId);
+
+      if (error) {
+        console.error('Failed to remove gear:', error);
+        toast.error(`Failed to remove gear: ${error.message}`);
+        return;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['hike-gear', hikeId, gearId] });
+      toast.success('Gear removed successfully');
+    } catch (error) {
+      console.error('Unexpected error while removing gear:', error);
+      toast.error('An unexpected error occurred while removing gear.');
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 mb-6">
       <div 
@@ -122,7 +151,9 @@ export default function GearSection({
           <GearList
             items={gear}
             onToggleChecked={(gearId, checked) => toggleGearChecked.mutate({ gearId, checked })}
-            viewOnly={false}
+            onRemoveGear={handleRemoveGear}
+            viewOnly={viewOnly}
+            hikeId={hikeId} // Pass the hikeId prop
           />
         </div>
       )}

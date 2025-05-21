@@ -2,22 +2,28 @@ import { Package2 } from 'lucide-react';
 import Zoom from 'react-medium-image-zoom';
 import { formatWeight } from '@/utils/weight';
 import { GearItem } from './types';
+import { useState } from 'react';
+import { supabase } from '@/lib/supabase'; // Update the import path for the Supabase client
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-toastify';
 
 interface GearListProps {
   items: GearItem[];
   onToggleChecked: (id: string, checked: boolean) => void;
+  onRemoveGear: (id: string) => void; // Add onRemoveGear prop
   viewOnly?: boolean;
+  hikeId: string; // Add hikeId prop
 }
 
 export default function GearList({ 
   items, 
   onToggleChecked, 
+  onRemoveGear, // Destructure onRemoveGear
   viewOnly = false,
+  hikeId, // Destructure hikeId
 }: GearListProps) {
-  // Debug the first item to see its structure
-  if (items?.length > 0) {
-    console.log('First item structure:', JSON.stringify(items[0], null, 2));
-  }
+  const [removingItemId, setRemovingItemId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // Ensure items is always an array
   const safeItems = items || [];
@@ -36,6 +42,7 @@ export default function GearList({
       location: item.location, // Keep the original location if it exists
       // Create a gear object from the item itself
       gear: {
+        id: item.id,
         name: item.name,
         weight_kg: item.weight_kg,
         image_url: item.image_url,
@@ -74,6 +81,37 @@ export default function GearList({
     );
   }
 
+  // Update the handleRemoveGear function to ensure it takes in gearId and removes the gear item from the correct hike using hikeId
+  const handleRemoveGear = async (gearId: string) => {
+    setRemovingItemId(gearId);
+
+    console.log(`Removing gear with ID: ${gearId} from hike with ID: ${hikeId}`);
+    // Wait for the fade-out animation to complete
+    setTimeout(async () => {
+      try {
+
+        const { error } = await supabase
+          .from('hike_gear')
+          .delete()
+          .eq('gear_id', gearId) // Use 'gear_id' instead of 'id'
+          .eq('hike_id', hikeId);
+
+        if (error) {
+          console.error('Failed to remove gear assignment from hike:', error);
+          toast.error(`Failed to remove gear assignment: ${error.message}`);
+          return;
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['hike-gear', hikeId] }); // Remove gearId from queryKey
+        onRemoveGear(gearId);
+      } catch (error) {
+        console.error('Unexpected error while removing gear assignment:', error);
+      } finally {
+        setRemovingItemId(null);
+      }
+    }, 300); // Match the CSS animation duration
+  };
+
   return (
     <div className="space-y-4">
       {Object.entries(sortedGroupedGear).map(([category, categoryItems]) => (
@@ -84,17 +122,21 @@ export default function GearList({
           <div className="p-4">
             {categoryItems.map((item) => {
               if (!item || !item.gear) return null;
-              
+
+              const isRemoving = removingItemId === item.id;
+
               // Check for location in all possible places
               const location = item.location || 
                                item.gear.location || 
                                (item.gear.category && item.gear.category.name === 'Storage' ? 'Storage location' : null);
               
-              // Debug the location for this item
-              console.log(`Item "${item.gear.name}" location:`, location);
-              
               return (
-                <div key={item.id} className="flex items-center py-2">
+                <div
+                  key={item.id}
+                  className={`flex items-center py-2 group transition-opacity duration-300 ${
+                    isRemoving ? 'opacity-0' : 'opacity-100'
+                  }`}
+                >
                   <div 
                     className={`h-6 w-6 border border-gray-300 mr-4 ${!viewOnly && 'cursor-pointer'} relative ${
                       item.checked ? 'bg-primary-50' : ''
@@ -131,7 +173,15 @@ export default function GearList({
                             <span className="ml-2 text-gray-600">({item.quantity}x)</span>
                           )}
                         </span>
-                        
+                        {/* Add delete button/icon on hover */}
+                        {!viewOnly && (
+                          <button
+                            className="hidden group-hover:block text-red-500 hover:text-red-700"
+                            onClick={() => handleRemoveGear(item.gear.id)}
+                          >
+                            Remove
+                          </button>
+                        )}
                       </div>
                       <div className="text-sm text-gray-500">
                         {formatWeight((item.gear.weight_kg || 0) * (item.quantity || 1))}
@@ -147,7 +197,6 @@ export default function GearList({
                           <span className="ml-2">📝 {item.notes}</span>
                         )}
                       </div>
-                    
                     </div>
                   </div>
                 </div>
