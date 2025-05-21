@@ -120,7 +120,7 @@ export default function SharedPlanner() {
       if (
         category === 'Shelter' || 
         category === 'Backpack' || 
-        category === 'Sleep System'
+        category === 'Sleeping system'
       ) {
         acc.bigThreeWeight += weight;
       }

@@ -127,7 +127,7 @@ export default function HikeOverview({
                 <div>
                   <h4 className="text-sm uppercase tracking-wider text-gray-600 mb-1">Big Three</h4>
                   <p className="text-lg">{formatWeight(bigThreeWeight)}</p>
-                  <p className="text-sm text-gray-500">Shelter, Pack, Sleep System</p>
+                  <p className="text-sm text-gray-500">Shelter, Pack, Sleeping system</p>
                 </div>
               </div>
 

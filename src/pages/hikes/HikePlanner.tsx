@@ -101,7 +101,7 @@ export default function HikePlanner() {
       if (
         category === 'Shelter' || 
         category === 'Backpack' || 
-        category === 'Sleep system'
+        category === 'Sleeping system'
       ) {
         acc.bigThreeWeight += weight;
       }
