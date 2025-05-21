@@ -37,18 +37,19 @@ export default function TaskList({ tasks, hikeId, viewOnly = false }: TaskListPr
 
   const toggleTaskCompletion = useMutation({
     mutationFn: async ({ taskId, completed }: { taskId: string; completed: boolean }) => {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('hike_tasks')
         .update({ completed })
-        .eq('id', taskId)
-        .select()
-        .single();
+        .eq('id', taskId);
 
       if (error) throw error;
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hike-tasks', hikeId] });
+      toast.success('Task completion status updated successfully');
+    },
+    onError: (error) => {
+      toast.error(`Failed to update task completion status: ${error.message}`);
     },
   });
 

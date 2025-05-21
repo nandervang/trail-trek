@@ -35,13 +35,14 @@ export function SortableItem({ id, task, viewOnly, toggleTaskCompletion }: Sorta
         className={`h-6 w-6 border border-gray-300 print:border-black mr-4 cursor-pointer relative ${
           task.completed ? 'bg-primary-50' : ''
         }`}
-        onClick={() =>
+        onClick={() => {
+          console.log('Toggling task completion:', { taskId: task.id, completed: !task.completed });
           !viewOnly &&
           toggleTaskCompletion.mutate({
             taskId: task.id,
             completed: !task.completed,
           })
-        }
+        }}
       >
         {task.completed && (
           <div className="absolute inset-0 flex items-center justify-center">
