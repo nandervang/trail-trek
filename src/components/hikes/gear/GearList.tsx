@@ -10,17 +10,19 @@ import { toast } from 'react-toastify';
 interface GearListProps {
   items: GearItem[];
   onToggleChecked: (id: string, checked: boolean) => void;
-  onRemoveGear: (id: string) => void; // Add onRemoveGear prop
+  onRemoveGear: (id: string) => void;
   viewOnly?: boolean;
-  hikeId: string; // Add hikeId prop
+  hikeId: string;
+  onToggleWearable?: (id: string, isWorn: boolean) => void; // Add prop
 }
 
 export default function GearList({ 
   items, 
   onToggleChecked, 
-  onRemoveGear, // Destructure onRemoveGear
+  onRemoveGear, 
   viewOnly = false,
-  hikeId, // Destructure hikeId
+  hikeId,
+  onToggleWearable, // Add prop
 }: GearListProps) {
   const [removingItemId, setRemovingItemId] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -31,7 +33,7 @@ export default function GearList({
   // Adapt items to a consistent structure
   const adaptedItems = safeItems.map(item => {
     // If the item already has gear property, use it
-    if (item.gear) return item;
+    const gear = item.gear || item;
     
     // Otherwise, create a structure where gear holds the item properties
     return {
@@ -42,13 +44,13 @@ export default function GearList({
       location: item.location, // Keep the original location if it exists
       // Create a gear object from the item itself
       gear: {
-        id: item.id,
-        name: item.name,
-        weight_kg: item.weight_kg,
-        image_url: item.image_url,
-        location: item.location, // Copy location to gear as well
-        category: item.category,
-        description: item.description,
+        id: gear.id,
+        name: gear.name,
+        weight_kg: gear.weight_kg,
+        image_url: gear.image_url,
+        location: gear.location,
+        category: gear.category,
+        description: gear.description, 
       }
     };
   });
@@ -122,14 +124,10 @@ export default function GearList({
           <div className="p-4">
             {categoryItems.map((item) => {
               if (!item || !item.gear) return null;
-
               const isRemoving = removingItemId === item.id;
-
-              // Check for location in all possible places
               const location = item.location || 
                                item.gear.location || 
                                (item.gear.category && item.gear.category.name === 'Storage' ? 'Storage location' : null);
-              
               return (
                 <div
                   key={item.id}
@@ -166,7 +164,7 @@ export default function GearList({
                       </div>
                     )}
                     <div className="flex-1">
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className={item.checked ? 'line-through text-gray-500' : ''}>
                           {item.gear.name}
                           {item.quantity > 1 && (
@@ -183,12 +181,25 @@ export default function GearList({
                           </button>
                         )}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {formatWeight((item.gear.weight_kg || 0) * (item.quantity || 1))}
+                      <div className="flex items-center gap-4 mt-1">
+                        <div className="text-sm text-gray-500">
+                          {formatWeight((item.gear.weight_kg || 0) * (item.quantity || 1))}
+                        </div>
+                        {/* Wearable checkbox for all items */}
+                        {!viewOnly && typeof item.is_worn !== 'undefined' && onToggleWearable && (
+                          <label className="flex items-center gap-1 text-xs cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={item.is_worn}
+                              onChange={() => onToggleWearable(item.id, !item.is_worn)}
+                            />
+                            <span>Wearable</span>
+                          </label>
+                        )}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {item.description && (
-                          <p className="text-sm text-gray-500">{item.description}</p>
+                        {item.gear.description && (
+                          <p className="text-sm text-gray-500">{item.gear.description}</p>
                         )}
                         {location && (
                           <span className="ml-2">📍 {location}</span>

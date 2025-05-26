@@ -15,6 +15,7 @@ export interface GearItem {
   description: string | null;
   // Or inside a nested gear property
   gear?: {
+    id?: string;
     name: string;
     weight_kg: number;
     image_url?: string;

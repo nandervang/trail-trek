@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { formatWeight } from '@/utils/weight';
@@ -6,7 +6,7 @@ import { GearItem } from './types';
 
 interface GearSelectorProps {
   isWearable?: boolean;
-  onSelect: (gearId: string, quantity: number, notes: string) => void;
+  onSelect: (gearId: string, quantity: number, notes: string, isWearable: boolean) => void;
   onCancel: () => void;
 }
 
@@ -14,6 +14,8 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
   const [selectedGearId, setSelectedGearId] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
+  const [search, setSearch] = useState('');
+  const [wearable, setWearable] = useState(!!isWearable);
 
   const { data: availableGear } = useQuery({
     queryKey: ['available-gear', isWearable],
@@ -37,14 +39,40 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
     },
   });
 
+  // Filter and group gear by category
+  const filteredGear = useMemo(() => {
+    if (!availableGear) return [];
+    return availableGear.filter(item =>
+      (item.name || '').toLowerCase().includes(search.toLowerCase())
+    );
+  }, [availableGear, search]);
+
+  const groupedGear = useMemo(() => {
+    const groups: Record<string, GearItem[]> = {};
+    filteredGear.forEach(item => {
+      const cat = item.category?.name || 'Uncategorized';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    });
+    return groups;
+  }, [filteredGear]);
+
   const handleSubmit = () => {
     if (!selectedGearId) return;
-    onSelect(selectedGearId, quantity, notes);
+    onSelect(selectedGearId, quantity, notes, wearable);
   };
 
   return (
     <div className="bg-gray-50 p-4 rounded-lg space-y-4 mb-6">
       <div>
+        <label className="label">Search Gear</label>
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search gear..."
+          className="input mb-2"
+        />
         <label className="label">Select Gear</label>
         <select
           name="gear"
@@ -54,10 +82,14 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
           className="input"
         >
           <option value="">Choose gear item...</option>
-          {availableGear?.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name} ({formatWeight(item.weight_kg || 0)})
-            </option>
+          {Object.entries(groupedGear).map(([cat, items]) => (
+            <optgroup key={cat} label={cat}>
+              {items.map(item => (
+                <option key={item.id} value={item.id}>
+                  {item.name} ({formatWeight(item.weight_kg || 0)})
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </div>
@@ -83,6 +115,16 @@ export default function GearSelector({ isWearable, onSelect, onCancel }: GearSel
             placeholder="Optional notes"
             className="input"
           />
+        </div>
+        <div>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={wearable}
+              onChange={e => setWearable(e.target.checked)}
+            />
+            <span>Wearable</span>
+          </label>
         </div>
       </div>
 

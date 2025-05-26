@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { useState } from 'react';
@@ -77,9 +77,24 @@ export default function HikePlanner() {
     enabled: !!id,
   });
 
-  if (!hike || !id) return null;
+  const queryClient = useQueryClient();
+  const toggleWearable = useMutation({
+    mutationFn: async ({ id, is_worn }: { id: string, is_worn: boolean }) => {
+      const { error } = await supabase
+        .from('hike_gear')
+        .update({ is_worn })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hike-gear', id] });
+    }
+  });
+  const handleToggleWearable = (gearId: string, is_worn: boolean) => {
+    toggleWearable.mutate({ id: gearId, is_worn });
+  };
 
-  
+  if (!hike || !id) return null;
 
   const { baseWeight, foodWeight, totalWeight, wearableWeight, bigThreeWeight } = gear?.reduce((acc, item) => {
     const weight = (item.gear?.weight_kg || 0) * (item.quantity || 1);
@@ -160,6 +175,7 @@ export default function HikePlanner() {
           onToggle={() => toggleSection('gear')}
           title="Gear Checklist"
           viewOnly={false}
+          onToggleWearable={handleToggleWearable}
         />
 
         {wearableGear.length > 0 && (
@@ -171,6 +187,7 @@ export default function HikePlanner() {
             title="Wearable Items"
             isWearable
             viewOnly={false}
+            onToggleWearable={handleToggleWearable}
           />
         )}
       </div>

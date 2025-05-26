@@ -157,10 +157,15 @@ export default function HikeDetails() {
   }, { baseWeight: 0, wearableWeight: 0, foodWeight: 0, totalWeight: 0, bigThreeWeight: 0 }) ?? 
   { baseWeight: 0, wearableWeight: 0, foodWeight: 0, totalWeight: 0, bigThreeWeight: 0 };
 
-
-
-  const regularGear = gear?.filter(item => !(item.gear as any).is_worn) || [];
-  const wearableGear = gear?.filter(item => (item.gear as any).is_worn) || [];
+  // Update wearableGear and regularGear filters
+  const wearableGear = gear?.filter(
+    item => item.is_worn === true || (item.is_worn == null && item.gear?.is_worn)
+  ) || [];
+  const regularGear = gear?.filter(
+    item => !(
+      item.is_worn === true || (item.is_worn == null && item.gear?.is_worn)
+    )
+  ) || [];
 
   const handleImageUpload = async (files: File[]) => {
     try {
@@ -340,7 +345,8 @@ export default function HikeDetails() {
           location: item.gear.location || '',
           notes: item.notes || '',
           is_worn: item.gear?.is_worn || false,
-          image_url: item.gear?.image_url || undefined
+          image_url: item.gear?.image_url || undefined,
+          description: item.gear?.description || ''
         }))}
         hikeId={id}
         expanded={expandedSections.gear}
@@ -358,8 +364,9 @@ export default function HikeDetails() {
           checked: item.checked || false,
           location: item.gear.location || '',
           notes: item.notes || '',
-          is_worn: item.gear?.is_worn || false,
-          image_url: item.gear?.image_url || undefined
+          is_worn: item.is_worn ?? item.gear?.is_worn ?? false, // Use per-hike logic
+          image_url: item.gear?.image_url || undefined,
+          description: item.gear?.description || ''
         }))}
         hikeId={id}
         expanded={expandedSections.wearable}

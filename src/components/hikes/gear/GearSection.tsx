@@ -15,6 +15,7 @@ interface GearSectionProps {
   title: string;
   isWearable?: boolean;
   viewOnly?: boolean;
+  onToggleWearable?: (id: string, isWorn: boolean) => void;
 }
 
 export default function GearSection({ 
@@ -24,7 +25,8 @@ export default function GearSection({
   onToggle, 
   title, 
   isWearable,
-  viewOnly = false
+  viewOnly = false,
+  onToggleWearable
 }: GearSectionProps) {
   const queryClient = useQueryClient();
   const [showGearSelector, setShowGearSelector] = useState(false);
@@ -47,7 +49,7 @@ export default function GearSection({
   });
 
   const addGearToHike = useMutation({
-    mutationFn: async ({ gearId, quantity, notes }: { gearId: string; quantity: number; notes: string }) => {
+    mutationFn: async ({ gearId, quantity, notes, is_worn }: { gearId: string; quantity: number; notes: string; is_worn: boolean }) => {
       const { data, error } = await supabase
         .from('hike_gear')
         .insert([{
@@ -55,11 +57,10 @@ export default function GearSection({
           gear_id: gearId,
           quantity,
           notes,
-          is_worn: isWearable || false,
+          is_worn,
         }])
         .select()
         .single();
-        
       if (error) throw error;
       return data;
     },
@@ -73,8 +74,8 @@ export default function GearSection({
     },
   });
 
-  const handleAddGear = (gearId: string, quantity: number, notes: string) => {
-    addGearToHike.mutate({ gearId, quantity, notes });
+  const handleAddGear = (gearId: string, quantity: number, notes: string, is_worn: boolean) => {
+    addGearToHike.mutate({ gearId, quantity, notes, is_worn });
   };
 
   const handleRemoveGear = async (gearId: string) => {
@@ -153,7 +154,8 @@ export default function GearSection({
             onToggleChecked={(gearId, checked) => toggleGearChecked.mutate({ gearId, checked })}
             onRemoveGear={handleRemoveGear}
             viewOnly={viewOnly}
-            hikeId={hikeId} // Pass the hikeId prop
+            hikeId={hikeId}
+            onToggleWearable={onToggleWearable} // Pass down
           />
         </div>
       )}
