@@ -28,9 +28,23 @@ export function SortableItem({ id, task, viewOnly, toggleTaskCompletion }: Sorta
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
       className="flex items-center text-lg"
     >
+      {/* Drag handle */}
+      <div
+        {...listeners}
+        className="mr-2 cursor-grab select-none flex items-center justify-center h-6 w-4"
+        title="Drag to reorder"
+      >
+        <svg className="w-3 h-3 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+          <circle cx="7" cy="6" r="1.2" />
+          <circle cx="7" cy="10" r="1.2" />
+          <circle cx="7" cy="14" r="1.2" />
+          <circle cx="13" cy="6" r="1.2" />
+          <circle cx="13" cy="10" r="1.2" />
+          <circle cx="13" cy="14" r="1.2" />
+        </svg>
+      </div>
       <div
         className={`h-6 w-6 border border-gray-300 print:border-black mr-4 cursor-pointer relative ${
           task.completed ? 'bg-primary-50' : ''
